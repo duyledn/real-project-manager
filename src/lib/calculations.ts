@@ -145,64 +145,59 @@ export function buildAmortization(project: Project): AmortizationMonth[] {
   for (let m = 1; m <= totalMonths; m++) {
     const isConstruction = m <= project.constructionMonths;
     const interest = balance * monthlyRate;
+    // Principal only pays down after construction on an amortizing loan; it can
+    // never exceed the outstanding balance or go negative.
     let principal = 0;
-    let payment = interest;
-
     if (!isConstruction && project.amortize) {
-      principal = Math.min(pi - interest, balance);
-      if (principal < 0) principal = 0; // payment never covers less than interest in normal cases
-      payment = interest + principal;
-      balance = balance - principal;
-    } else {
-      // Interest-only (construction period, or non-amortizing loan)
-      payment = interest;
-      balance = balance; // unchanged
+      principal = Math.max(0, Math.min(pi - interest, balance));
+      balance -= principal;
     }
-
-    schedule.push({
-      month: m,
-      interest,
-      principal,
-      payment,
-      balance,
-    });
+    schedule.push({ month: m, interest, principal, payment: interest + principal, balance });
   }
 
   return schedule;
 }
 
-/** Aggregate the monthly schedule into a single hold-year (1-indexed). */
+/** Aggregate the monthly schedule into a single hold-year (1-indexed). Single
+ *  pass over the 12 relevant rows — no intermediate slice allocation. */
 function yearSlice(schedule: AmortizationMonth[], year: number) {
   const start = (year - 1) * 12;
-  const end = year * 12;
-  const months = schedule.slice(start, end);
-  const interest = months.reduce((s, m) => s + m.interest, 0);
-  const principal = months.reduce((s, m) => s + m.principal, 0);
-  const payment = months.reduce((s, m) => s + m.payment, 0);
-  const endingBalance = months.length ? months[months.length - 1].balance : 0;
+  const end = Math.min(year * 12, schedule.length);
+  let interest = 0;
+  let principal = 0;
+  let payment = 0;
+  let endingBalance = 0;
+  for (let i = start; i < end; i++) {
+    const m = schedule[i];
+    interest += m.interest;
+    principal += m.principal;
+    payment += m.payment;
+    endingBalance = m.balance;
+  }
   return { interest, principal, payment, endingBalance };
 }
 
 // --- Income & expense growth ----------------------------------------------
 
 /**
- * Value of a stream in a given year, grown annually.
- * "once" frequency items only count in year 1.
- * Year-1 prorating for the in-service fraction is applied by the caller.
+ * Split a stream into its two growth behaviours, summed once up front:
+ *  - `recurring`: annualized total that grows every year by the stream's rate.
+ *  - `onceYear1`: annualized total of "once" items, counted in year 1 only.
+ * Because every item in a stream shares the same growth rate, the per-year
+ * value is just `recurring * g^(year-1) (+ onceYear1 in year 1)` — so we never
+ * have to re-walk the item list inside the year loop.
  */
-function streamForYear(
-  items: { amount: number; frequency: ExpenseFrequency }[],
-  year: number,
-  growthRatePct: number,
-): number {
-  const g = 1 + growthRatePct / 100;
-  return items.reduce((sum, item) => {
-    const annualAmount = toAnnual(item.amount, item.frequency);
-    if (item.frequency === "once") {
-      return year === 1 ? sum + annualAmount : sum;
-    }
-    return sum + annualAmount * Math.pow(g, year - 1);
-  }, 0);
+function streamBases(items: { amount: number; frequency: ExpenseFrequency }[]): {
+  recurring: number;
+  onceYear1: number;
+} {
+  let recurring = 0;
+  let onceYear1 = 0;
+  for (const item of items) {
+    if (item.frequency === "once") onceYear1 += item.amount;
+    else recurring += toAnnual(item.amount, item.frequency);
+  }
+  return { recurring, onceYear1 };
 }
 
 // --- Pro forma -------------------------------------------------------------
@@ -213,21 +208,30 @@ export function buildProForma(project: Project, schedule: AmortizationMonth[]): 
   const fraction1 = inServiceFractionYear1(project);
   const years: ProFormaYear[] = [];
 
+  // Precompute the stream bases and growth factors once, outside the year loop.
+  const incomeBase = streamBases(project.incomes);
+  const expenseBase = streamBases(project.expenses);
   const roomRevenueBase = annualRoomRevenue(project);
+  const rentGrowth = 1 + project.rentGrowthRate / 100;
+  const expenseGrowth = 1 + project.expenseGrowthRate / 100;
+  const vacancy = project.vacancyRate / 100;
 
   for (let year = 1; year <= project.holdYears; year++) {
     const proration = year === 1 ? fraction1 : 1;
+    const rentFactor = Math.pow(rentGrowth, year - 1);
+    const incomeOnce = year === 1 ? incomeBase.onceYear1 : 0;
+    const expenseOnce = year === 1 ? expenseBase.onceYear1 : 0;
 
     // Room revenue grows like rent over the hold, then joins the income stream
     // so vacancy is applied to it alongside everything else.
-    const roomRevenue = roomRevenueBase * Math.pow(1 + project.rentGrowthRate / 100, year - 1);
+    const roomRevenue = roomRevenueBase * rentFactor;
     const grossIncome =
-      (streamForYear(project.incomes, year, project.rentGrowthRate) + roomRevenue) * proration;
-    const vacancyLoss = grossIncome * (project.vacancyRate / 100);
+      (incomeBase.recurring * rentFactor + incomeOnce + roomRevenue) * proration;
+    const vacancyLoss = grossIncome * vacancy;
     const effectiveGrossIncome = grossIncome - vacancyLoss;
 
     const operatingExpenses =
-      streamForYear(project.expenses, year, project.expenseGrowthRate) * proration;
+      (expenseBase.recurring * Math.pow(expenseGrowth, year - 1) + expenseOnce) * proration;
 
     const noi = effectiveGrossIncome - operatingExpenses;
     const ebitda = noi; // for a single operating property these are equivalent
@@ -304,9 +308,18 @@ export function buildExit(project: Project, schedule: AmortizationMonth[]): Exit
 
 // --- IRR -------------------------------------------------------------------
 
-/** Net present value of a series of cash flows at a given annual rate. */
+/**
+ * Net present value of a series of cash flows at a given annual rate.
+ * Evaluated by Horner's method (one division per period, no Math.pow), which
+ * matters because irr() calls this ~200× per solve.
+ */
 export function npv(rate: number, cashFlows: number[]): number {
-  return cashFlows.reduce((acc, cf, t) => acc + cf / Math.pow(1 + rate, t), 0);
+  const discount = 1 + rate;
+  let acc = 0;
+  for (let t = cashFlows.length - 1; t >= 0; t--) {
+    acc = acc / discount + cashFlows[t];
+  }
+  return acc;
 }
 
 /**
@@ -349,7 +362,8 @@ export function buildReturns(
   schedule: AmortizationMonth[],
 ): ReturnsSummary {
   const renoCost = totalRenovationCost(project);
-  const projectCost = totalProjectCost(project);
+  // Reuse renoCost rather than re-summing line items via totalProjectCost().
+  const projectCost = project.purchasePrice + project.closingCosts + renoCost;
 
   // Equity actually put in at time 0: all-in cost minus what was borrowed.
   const cashInvested = projectCost - project.borrowed;

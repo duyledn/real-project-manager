@@ -140,9 +140,9 @@ export function currencySymbol(currency: "USD" | "VND"): string {
 }
 
 /**
- * A money input bound to a base (USD) number. When the active currency is VND,
- * it shows and accepts VND values (converted via the exchange rate) while still
- * storing the USD base, so every total stays consistent.
+ * A money input. The value is stored verbatim in the project's active currency
+ * — no exchange-rate conversion happens here. Switching currency is done only
+ * via the Convert button, which rewrites the stored amounts in one pass.
  */
 export function MoneyInput({
   value,
@@ -159,16 +159,14 @@ export function MoneyInput({
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   ariaLabel?: string;
 }) {
-  const { currency, exchangeRate } = useCurrency();
-  const display = currency === "VND" ? Math.round(value * exchangeRate) : value;
   return (
     <NumberInput
-      value={display}
+      value={value}
       min={min}
       ariaLabel={ariaLabel}
       className={className}
       onKeyDown={onKeyDown}
-      onChange={(entered) => onChange(currency === "VND" ? entered / exchangeRate : entered)}
+      onChange={onChange}
     />
   );
 }
@@ -234,8 +232,8 @@ export function NumberField({ label, value, onChange, prefix, suffix, min, hint 
   );
 }
 
-/** A labeled money field. The currency symbol and entered value follow the
- *  active currency (USD/VND); the value stored via onChange is always USD. */
+/** A labeled money field. The symbol follows the active currency (USD/VND) and
+ *  the entered value is stored verbatim in that currency (no live conversion). */
 export function MoneyField({ label, value, onChange, min, hint }: { label: string; value: number; onChange: (v: number) => void; min?: number; hint?: string }) {
   const { currency } = useCurrency();
   return (

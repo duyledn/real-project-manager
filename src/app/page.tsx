@@ -6,11 +6,10 @@ import Link from "next/link";
 import { Plus, FileText, Trash2, TrendingUp, TrendingDown, Users } from "lucide-react";
 import type { ProjectSummary } from "@/lib/types";
 import { defaultProjectInput } from "@/lib/defaults";
-import { useCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency";
 
 export default function HomePage() {
   const router = useRouter();
-  const { fmtMoney } = useCurrency();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -110,7 +109,7 @@ export default function HomePage() {
                 <div className="min-w-0">
                   <div className="font-display font-bold text-xl truncate">{p.name}</div>
                   <div className="label-mono mt-1">
-                    {p.holdYears}-yr hold · Rehab {fmtMoney(p.totalRenovationCost)} · Updated{" "}
+                    {p.holdYears}-yr hold · Rehab {formatMoney(p.totalRenovationCost, p.currency)} · Updated{" "}
                     {new Date(p.updatedAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -121,7 +120,7 @@ export default function HomePage() {
                       className={`font-mono font-bold flex items-center gap-1 justify-end ${positive ? "text-green" : "text-red"}`}
                     >
                       {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                      {fmtMoney(p.netProfit)}
+                      {formatMoney(p.netProfit, p.currency)}
                     </div>
                   </div>
                   <span

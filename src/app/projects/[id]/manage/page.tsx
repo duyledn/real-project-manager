@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, X, Settings2, Maximize2, Minimize2 } from "lucide-react";
-import { useProject } from "@/lib/useProject";
+import { useProjectContext } from "@/lib/projectContext";
 import { useJobCategories } from "@/lib/useJobCategories";
 import { useSubcontractors } from "@/lib/useSubcontractors";
 import { useCurrency } from "@/lib/currency";
@@ -15,9 +15,8 @@ import { useDragReorder, moveItem } from "@/lib/useDragReorder";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobTimeline } from "@/components/JobTimeline";
 
-export default function ManagePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { project, setProject, loading, error, saveState } = useProject(id);
+export default function ManagePage() {
+  const { project, setProject, loading, error, saveState } = useProjectContext();
   const { categories, addCategory, removeCategory } = useJobCategories();
   const { subs } = useSubcontractors();
   const { fmtMoney } = useCurrency();
@@ -29,6 +28,39 @@ export default function ManagePage({ params }: { params: Promise<{ id: string }>
   const jobsDrag = useDragReorder((from, to) =>
     setProject((p) => ({ ...p, jobs: moveItem(p.jobs, from, to) })),
   );
+
+  // One-way auto-fill: every named remodel item is pushed into Jobs exactly
+  // once (tracked by importedItemIds). Editing or deleting the resulting job
+  // never flows back to the remodel costs, and a deleted job is not re-added.
+  useEffect(() => {
+    if (!project) return;
+    const imported = new Set(project.importedItemIds);
+    const fresh = project.items.filter((i) => i.description.trim() !== "" && !imported.has(i.id));
+    if (fresh.length === 0) return;
+    setProject((p) => {
+      const ledger = new Set(p.importedItemIds);
+      const items = p.items.filter((i) => i.description.trim() !== "" && !ledger.has(i.id));
+      if (items.length === 0) return p;
+      const startDate = p.startDate || new Date().toISOString().slice(0, 10);
+      const newJobs: Job[] = items.map((i) => ({
+        id: makeId(),
+        category: i.description.trim(),
+        startDate,
+        endDate: "",
+        status: "N/A",
+        approvedBidderId: null,
+        color: "",
+        estimatedCost: i.qty * i.unitCost,
+        sourceItemId: i.id,
+        bidders: [],
+      }));
+      return {
+        ...p,
+        jobs: [...p.jobs, ...newJobs],
+        importedItemIds: [...p.importedItemIds, ...items.map((i) => i.id)],
+      };
+    });
+  }, [project, setProject]);
 
   if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
   if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
@@ -54,6 +86,8 @@ export default function ManagePage({ params }: { params: Promise<{ id: string }>
           status: "N/A",
           approvedBidderId: null,
           color: "",
+          estimatedCost: 0,
+          sourceItemId: "",
           bidders: [],
         },
       ],
@@ -147,6 +181,7 @@ export default function ManagePage({ params }: { params: Promise<{ id: string }>
                 <th className="text-left label-mono p-2.5 w-32">Start</th>
                 <th className="text-left label-mono p-2.5 w-32">End <span className="normal-case opacity-70">(optional)</span></th>
                 <th className="text-left label-mono p-2.5 w-44">Status</th>
+                <th className="text-right label-mono p-2.5 w-28">Budget</th>
                 <th className="text-left label-mono p-2.5">Approved Sub / Price</th>
                 <th className="w-24" />
               </tr>
@@ -154,7 +189,7 @@ export default function ManagePage({ params }: { params: Promise<{ id: string }>
             <tbody>
               {project.jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-ink-muted text-sm">No jobs yet. Add your first scope below.</td>
+                  <td colSpan={8} className="p-6 text-center text-ink-muted text-sm">No jobs yet. Add your first scope below.</td>
                 </tr>
               ) : (
                 project.jobs.map((job, idx) => {
@@ -208,6 +243,16 @@ export default function ManagePage({ params }: { params: Promise<{ id: string }>
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                      </td>
+                      <td className="p-2.5 text-right font-mono text-sm whitespace-nowrap">
+                        {job.estimatedCost > 0 ? (
+                          <span title={job.sourceItemId ? "Auto-filled from remodel costs" : undefined}>
+                            {fmtMoney(job.estimatedCost)}
+                            {job.sourceItemId && <span className="label-mono ml-1 align-middle">est</span>}
+                          </span>
+                        ) : (
+                          <span className="text-ink-muted">—</span>
+                        )}
                       </td>
                       <td className="p-2.5 text-sm">
                         {showsApprovedDetails(job.status) && winner ? (

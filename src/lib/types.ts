@@ -5,6 +5,11 @@
 // inputs, so the Math page and the Analysis page can never drift out of
 // sync with each other.
 
+/** The currency a project's stored money figures are expressed in. Conversion
+ *  only happens when the user presses the Convert button, which rewrites every
+ *  amount in place and flips this flag — values are never converted on input. */
+export type Currency = "USD" | "VND";
+
 export interface RenovationItem {
   id: string;
   description: string;
@@ -127,6 +132,14 @@ export interface Job {
   approvedBidderId: string | null;
   /** Custom timeline bar color (hex). "" = color by status. */
   color: string;
+  /**
+   * Budget for this scope, in the project currency. Auto-seeded (once) from the
+   * source remodel item's qty × unitCost when imported, then freely editable —
+   * editing it never flows back to the remodel costs.
+   */
+  estimatedCost: number;
+  /** Remodel item this job was auto-imported from ("" = created manually). */
+  sourceItemId: string;
   bidders: Bidder[];
 }
 
@@ -165,6 +178,9 @@ export interface Project {
   name: string;
   createdAt: string;
   updatedAt: string;
+
+  /** Currency the figures below are stored in. Changed only via Convert. */
+  currency: Currency;
 
   // Phase 2 — project management meta
   startDate: string;
@@ -216,6 +232,13 @@ export interface Project {
   itemGroups: ItemGroup[];
   expenses: OperatingExpense[];
   incomes: IncomeSource[];
+
+  /**
+   * Ledger of renovation-item ids already pushed into the Jobs section. Makes
+   * the one-way auto-fill idempotent: an item is imported once, and deleting
+   * the resulting job never re-imports it.
+   */
+  importedItemIds: string[];
 }
 
 /** Payload shape accepted by the create/update API — everything except the
@@ -226,6 +249,7 @@ export interface ProjectSummary {
   id: string;
   name: string;
   updatedAt: string;
+  currency: Currency;
   holdYears: number;
   totalRenovationCost: number;
   netProfit: number;

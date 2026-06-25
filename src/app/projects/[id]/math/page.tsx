@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useProject } from "@/lib/useProject";
+import { useProjectContext } from "@/lib/projectContext";
 import {
   analyzeProject,
   totalRenovationCost,
@@ -20,9 +20,8 @@ import { useCurrency } from "@/lib/currency";
 import { SectionHeader } from "@/components/fields";
 import type { Project } from "@/lib/types";
 
-export default function MathPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { project, loading, error } = useProject(id);
+export default function MathPage() {
+  const { project, loading, error } = useProjectContext();
   const { fmtMoney } = useCurrency();
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 

@@ -70,6 +70,7 @@ function newId(): string {
 function normalizeProject(p: Project): Project {
   return {
     ...p,
+    currency: p.currency ?? "USD",
     startDate: p.startDate ?? "",
     projectAddress: p.projectAddress ?? "",
     projectManager: p.projectManager ?? "",
@@ -78,7 +79,10 @@ function normalizeProject(p: Project): Project {
     companyName: p.companyName ?? "",
     senderName: p.senderName ?? "",
     plansLink: p.plansLink ?? "",
-    jobs: Array.isArray(p.jobs) ? p.jobs : [],
+    jobs: Array.isArray(p.jobs)
+      ? p.jobs.map((j) => ({ ...j, estimatedCost: j.estimatedCost ?? 0, sourceItemId: j.sourceItemId ?? "" }))
+      : [],
+    importedItemIds: Array.isArray(p.importedItemIds) ? p.importedItemIds : [],
     rooms: p.rooms ?? 0,
     adr: p.adr ?? 0,
     recaptureTaxRate: p.recaptureTaxRate ?? 25,
@@ -95,6 +99,7 @@ function toSummary(p: Project): ProjectSummary {
     id: p.id,
     name: p.name,
     updatedAt: p.updatedAt,
+    currency: p.currency ?? "USD",
     holdYears: p.holdYears,
     totalRenovationCost: totalRenovationCost(p),
     netProfit: analysis.returns.totalProfit,

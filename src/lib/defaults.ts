@@ -103,6 +103,8 @@ const jobSchema = z.object({
     .default("N/A"),
   approvedBidderId: z.string().nullable().default(null),
   color: z.string().default(""),
+  estimatedCost: z.number().finite().default(0),
+  sourceItemId: z.string().default(""),
   bidders: z.array(bidderSchema).default([]),
 });
 
@@ -131,6 +133,10 @@ export function makeSubcontractorInput(): SubcontractorInput {
 
 export const projectInputSchema = z.object({
   name: z.string().min(1, "Project name is required"),
+
+  // Currency the stored figures are in. Defaults to USD so projects saved
+  // before this field existed keep loading and PUTs don't strip it.
+  currency: z.enum(["USD", "VND"]).default("USD"),
 
   // Phase 2 meta — all optional/defaulted so pre-Phase-2 projects still load.
   startDate: z.string().default(""),
@@ -173,6 +179,7 @@ export const projectInputSchema = z.object({
   itemGroups: z.array(itemGroupSchema).default([]),
   expenses: z.array(operatingExpenseSchema),
   incomes: z.array(incomeSourceSchema),
+  importedItemIds: z.array(z.string()).default([]),
 });
 
 export function makeId(): string {
@@ -188,6 +195,7 @@ export function makeId(): string {
 export function defaultProjectInput(): ProjectInput {
   return {
     name: "Untitled Remodel",
+    currency: "USD",
 
     // Phase 2 — project management
     startDate: new Date().toISOString().slice(0, 10),
@@ -243,5 +251,6 @@ export function defaultProjectInput(): ProjectInput {
     incomes: [
       { id: makeId(), label: "Rental income", amount: 2400, frequency: "monthly" as const },
     ],
+    importedItemIds: [],
   };
 }

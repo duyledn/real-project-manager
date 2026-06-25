@@ -42,6 +42,19 @@ const proj: Project = {
   name: "Test",
   createdAt: "",
   updatedAt: "",
+  currency: "USD",
+
+  // Phase 2 meta — not exercised by these calculation tests.
+  startDate: "",
+  projectAddress: "",
+  projectManager: "",
+  owner: "",
+  generalContractor: "",
+  companyName: "",
+  senderName: "",
+  plansLink: "",
+  jobs: [],
+
   purchasePrice: 300000,
   closingCosts: 6000,
   landPercent: 20,
@@ -54,14 +67,19 @@ const proj: Project = {
   rentGrowthRate: 0,
   expenseGrowthRate: 0,
   vacancyRate: 0,
+  rooms: 0,
+  adr: 0,
   appreciationRate: 0,
   exitValueOverride: null,
   sellingCostPercent: 0,
   taxRate: 0,
   depreciationLifeYears: 27.5,
-  items: [{ id: "i1", description: "Reno", category: "Materials", qty: 1, unitCost: 50000 }],
+  recaptureTaxRate: 0,
+  items: [{ id: "i1", description: "Reno", category: "Materials", qty: 1, unitCost: 50000, color: "", groupId: "" }],
+  itemGroups: [],
   expenses: [],
-  incomes: [{ id: "inc1", label: "Rent", annualAmount: 24000, recurring: true }],
+  incomes: [{ id: "inc1", label: "Rent", amount: 24000, frequency: "annual" }],
+  importedItemIds: [],
 };
 approx("depreciableBasis", depreciableBasis(proj), 290000, 0.01);
 approx("annualDepreciation", annualDepreciation(proj), 10545.45, 0.5);

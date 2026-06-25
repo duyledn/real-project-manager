@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Plus, X, Copy, Check, Table2, LayoutGrid, Trash2 } from "lucide-react";
-import { useProject } from "@/lib/useProject";
+import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
 import { totalRenovationCost, annualRoomRevenue } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
@@ -18,10 +18,9 @@ import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
 const ITEM_CATEGORIES = ["Materials", "Labor", "Permits & Fees", "Contingency", "Other"];
 const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as ExpenseFrequency[];
 
-export default function InputsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { project, setProject, loading, error, saveState } = useProject(id);
-  const { fmtMoney, currency, exchangeRate } = useCurrency();
+export default function InputsPage() {
+  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { fmtMoney, currency } = useCurrency();
 
   // Renovation items: view mode (flat table vs grouped boxes), selection, copy.
   const [itemsView, setItemsView] = useState<"table" | "grouped">("table");
@@ -106,7 +105,7 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
 
   async function copyItems() {
     const sym = currency === "VND" ? "VND" : "USD";
-    const money = (usd: number) => (currency === "VND" ? Math.round(usd * exchangeRate) : Math.round(usd * 100) / 100);
+    const money = (n: number) => (currency === "VND" ? Math.round(n) : Math.round(n * 100) / 100);
     const groupName = (gid: string) => project!.itemGroups.find((g) => g.id === gid)?.name ?? "";
     const header = ["Item", "Category", "Group", "Qty", `Unit Cost (${sym})`, `Total (${sym})`];
     const rows = project!.items.map((i) => [i.description, i.category, groupName(i.groupId), i.qty, money(i.unitCost), money(i.qty * i.unitCost)]);
@@ -130,6 +129,12 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         />
         <SaveIndicator state={saveState} />
       </div>
+
+      {/* ===== GROUP A — Construction Estimate ===== */}
+      <GroupBanner
+        label="Construction Estimate"
+        caption="What the remodel itself costs — the itemized scope of work. These line items also auto-fill the Jobs section under Manage."
+      />
 
       {/* 01 — Renovation items */}
       <section>
@@ -256,9 +261,15 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         )}
       </section>
 
-      {/* 02 — Acquisition */}
+      {/* ===== GROUP B — Investment Estimate ===== */}
+      <GroupBanner
+        label="Investment Estimate"
+        caption="The buy-rehab-hold model: how you acquire and finance the property, hold-period assumptions, income, expenses, and exit. Drives the Analysis, Math, and Report tabs."
+      />
+
+      {/* 01 — Acquisition */}
       <section>
-        <SectionHeader num="02" title="Acquisition & Basis" caption="What you pay for the property, and how much of it is non-depreciable land." />
+        <SectionHeader num="01" title="Acquisition & Basis" caption="What you pay for the property, and how much of it is non-depreciable land." />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <MoneyField label="Purchase Price" min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
           <MoneyField label="Closing Costs" min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
@@ -266,9 +277,9 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         </div>
       </section>
 
-      {/* 03 — Financing */}
+      {/* 02 — Financing */}
       <section>
-        <SectionHeader num="03" title="Financing" caption="Borrowed capital, rate, and the interest-only rehab window before the loan begins amortizing." />
+        <SectionHeader num="02" title="Financing" caption="Borrowed capital, rate, and the interest-only rehab window before the loan begins amortizing." />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <MoneyField label="Borrowed Capital" min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
           <NumberField label="Annual Interest Rate" suffix="%" step={0.1} min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
@@ -278,9 +289,9 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         </div>
       </section>
 
-      {/* 04 — Hold assumptions */}
+      {/* 03 — Hold assumptions */}
       <section>
-        <SectionHeader num="04" title="Hold Period & Growth" caption="How long you hold, and the annual growth applied to rent and expenses. Add years anytime — the analysis re-projects automatically." />
+        <SectionHeader num="03" title="Hold Period & Growth" caption="How long you hold, and the annual growth applied to rent and expenses. Add years anytime — the analysis re-projects automatically." />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <NumberField label="Hold Period" suffix="yr" step={1} min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} hint="3, 5, 10… extend as far as you like." />
           <NumberField label="Rent Growth" suffix="%/yr" step={0.1} value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
@@ -289,9 +300,9 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         </div>
       </section>
 
-      {/* 05 — Revenue sources */}
+      {/* 04 — Revenue sources */}
       <section>
-        <SectionHeader num="05" title="Revenue Sources" caption="Income the property produces. Room revenue appears as a live line item below, then vacancy is applied alongside the other sources." />
+        <SectionHeader num="04" title="Revenue Sources" caption="Income the property produces. Room revenue appears as a live line item below, then vacancy is applied alongside the other sources." />
 
         {/* Room revenue (hotel / short-term rental) */}
         <div className="panel p-5 mb-4">
@@ -341,9 +352,9 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         />
       </section>
 
-      {/* 06 — Operating expenses */}
+      {/* 05 — Operating expenses */}
       <section>
-        <SectionHeader num="06" title="Operating Expenses" caption="Costs to run the property. Enter the amount per period using the frequency selector on each row." />
+        <SectionHeader num="05" title="Operating Expenses" caption="Costs to run the property. Enter the amount per period using the frequency selector on each row." />
         <RecurringTable
           rows={project.expenses}
           onAdd={() => patch((p) => ({ ...p, expenses: [...p.expenses, { id: makeId(), label: "", category: "Other", amount: 0, frequency: "monthly" as ExpenseFrequency }] }))}
@@ -358,9 +369,9 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
         />
       </section>
 
-      {/* 07 — Exit & tax */}
+      {/* 06 — Exit & tax */}
       <section>
-        <SectionHeader num="07" title="Exit & Tax Assumptions" caption="How the property is valued at sale, and the tax rate used for after-tax returns." />
+        <SectionHeader num="06" title="Exit & Tax Assumptions" caption="How the property is valued at sale, and the tax rate used for after-tax returns." />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <NumberField label="Appreciation Rate" suffix="%/yr" step={0.1} value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} hint="Used to project sale price if no override below." />
           <MoneyField label="Exit Value Override" min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} hint="Set a specific sale price. 0 = use appreciation projection." />
@@ -370,6 +381,18 @@ export default function InputsPage({ params }: { params: Promise<{ id: string }>
           <NumberField label="Depreciation Recapture Tax" suffix="%" step={1} min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} hint="Tax on depreciation taken, due at sale. ~25% in the US. Set 0 to ignore." />
         </div>
       </section>
+    </div>
+  );
+}
+
+/** Big divider that groups the page into "Construction Estimate" and
+ *  "Investment Estimate". Purely presentational. */
+function GroupBanner({ label, caption }: { label: string; caption?: string }) {
+  return (
+    <div className="border-y-[2.5px] border-ink bg-ink text-panel px-5 py-4">
+      <div className="font-mono text-[11px] tracking-widest uppercase text-panel/70 mb-1">Section</div>
+      <h2 className="font-display font-extrabold text-2xl uppercase tracking-wide leading-none">{label}</h2>
+      {caption && <p className="text-sm text-panel/80 mt-1.5 max-w-2xl">{caption}</p>}
     </div>
   );
 }
@@ -407,7 +430,7 @@ function RecurringTable({
 }) {
   const annualTotal =
     rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0) + (pinnedRow?.amount ?? 0);
-  const { currency, exchangeRate } = useCurrency();
+  const { currency } = useCurrency();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
@@ -435,7 +458,7 @@ function RecurringTable({
 
   async function copyTable() {
     const sym = currency === "VND" ? "VND" : "USD";
-    const money = (usd: number) => (currency === "VND" ? Math.round(usd * exchangeRate) : Math.round(usd * 100) / 100);
+    const money = (n: number) => (currency === "VND" ? Math.round(n) : Math.round(n * 100) / 100);
     const header = [labelHeader, `Amount (${sym})`, "Frequency", `Annual Total (${sym})`];
     const body = rows.map((r) => [
       r.label,

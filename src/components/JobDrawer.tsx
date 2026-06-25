@@ -115,6 +115,18 @@ export function JobDrawer({
                 className="field-input"
               />
             </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="label-mono">Budget / Estimate ({currencySymbol(currency)})</span>
+              <MoneyInput
+                min={0}
+                value={job.estimatedCost}
+                onChange={(v) => onChange((j) => ({ ...j, estimatedCost: v }))}
+                className="field-input font-mono"
+              />
+              <span className="text-[11px] text-ink-muted leading-tight">
+                {job.sourceItemId ? "Seeded from remodel costs; editing here won't change them." : "Manual budget for this scope."}
+              </span>
+            </label>
           </div>
 
           {/* Bidders */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,15 +14,14 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
-import { useProject } from "@/lib/useProject";
+import { useProjectContext } from "@/lib/projectContext";
 import { analyzeProject } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { SectionHeader } from "@/components/fields";
 
-export default function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { project, loading, error } = useProject(id);
+export default function AnalysisPage() {
+  const { project, loading, error } = useProjectContext();
   const { fmtMoney, currency } = useCurrency();
 
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);

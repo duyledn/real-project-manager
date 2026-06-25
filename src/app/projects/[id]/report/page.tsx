@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useMemo } from "react";
 import { Printer } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -13,16 +13,15 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
-import { useProject } from "@/lib/useProject";
+import { useProjectContext } from "@/lib/projectContext";
 import { analyzeProject, totalRenovationCost } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
 
-export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { project, loading, error } = useProject(id);
-  const { fmtMoney, currency, exchangeRate } = useCurrency();
+export default function ReportPage() {
+  const { project, loading, error } = useProjectContext();
+  const { fmtMoney, currency } = useCurrency();
 
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
@@ -81,10 +80,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <span>Buy-Rehab-Hold Rental</span>
             <span>{project.holdYears}-Year Hold</span>
             <span>Prepared {generatedOn}</span>
-            <span>
-              Figures in {currency}
-              {currency === "VND" ? ` (at ${exchangeRate.toLocaleString("en-US")} ₫/USD)` : ""}
-            </span>
+            <span>Figures in {currency}</span>
           </div>
         </header>
 
@@ -269,7 +265,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             depreciation recapture at sale; rental-loss deductibility depends on passive-activity rules and individual
             circumstances. This is not investment, tax, or legal advice — consult qualified professionals before making
             any investment decision.
-            {currency === "VND" && ` VND figures are converted from USD at ${exchangeRate.toLocaleString("en-US")} ₫/USD for presentation only.`}
           </p>
         </footer>
       </article>

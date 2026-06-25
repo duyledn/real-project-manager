@@ -379,7 +379,7 @@ export function JobTimeline({
                         <button
                           key={hex}
                           onClick={() => {
-                            onColorChange(picker.jobId, hex);
+                            onColorChange?.(picker.jobId, hex);
                             setPicker(null);
                           }}
                           className="w-6 h-6 rounded-sm hover:scale-110 transition-transform"
@@ -393,7 +393,7 @@ export function JobTimeline({
               </div>
               <button
                 onClick={() => {
-                  onColorChange(picker.jobId, "");
+                  onColorChange?.(picker.jobId, "");
                   setPicker(null);
                 }}
                 className="mt-2 w-full font-mono text-[10px] uppercase tracking-wider border border-hair py-1 hover:bg-paper transition-colors"
