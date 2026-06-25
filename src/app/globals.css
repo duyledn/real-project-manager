@@ -1,15 +1,75 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================================
+   Warm "liquid glass" design tokens.
+   Theme is toggled via [data-theme="dark"] on <html> (persisted in localStorage).
+   Existing Tailwind color tokens (paper/panel/ink/blueprint…) are mapped onto
+   these CSS variables in tailwind.config.ts, so every screen re-skins for free.
+   =========================================================================== */
+:root {
+  --app-bg: linear-gradient(165deg, #FAF4EC 0%, #F3E9DD 55%, #EFE2D6 100%);
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-2: rgba(255, 255, 255, 0.40);
+  --glass-strong: rgba(255, 255, 255, 0.74);
+  --seg-active: #FFFFFF;
+  --surface-solid: #FFFFFF;
+  --border: rgba(120, 86, 60, 0.16);
+  --border-top: rgba(255, 255, 255, 0.85); /* specular top edge on glass */
+  --text: #2B2420;
+  --muted: #8C7E73;
+  --faint: #B4A89E;
+  --accent: #C65D3B; /* terracotta */
+  --accent-2: #DFA258; /* amber */
+  --accent-soft: rgba(198, 93, 59, 0.12);
+  --pos: #5AA15E;
+  --neg: #B4451F;
+  --warn: #C98A2E;
+  --shadow: 0 4px 22px rgba(74, 48, 28, 0.10), 0 1px 3px rgba(74, 48, 28, 0.05);
+  --shadow-lg: 0 20px 50px rgba(74, 48, 28, 0.18);
+  --blur: blur(22px) saturate(175%);
+  --blob1: rgba(198, 93, 59, 0.30);
+  --blob2: rgba(223, 162, 88, 0.28);
+  --blob3: rgba(206, 128, 108, 0.22);
+}
+
+[data-theme="dark"] {
+  --app-bg: linear-gradient(165deg, #1E1813 0%, #181310 55%, #140F0C 100%);
+  --glass: rgba(44, 37, 32, 0.55);
+  --glass-2: rgba(44, 37, 32, 0.38);
+  --glass-strong: rgba(52, 44, 38, 0.74);
+  --seg-active: rgba(255, 255, 255, 0.12);
+  --surface-solid: #2A231E;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-top: rgba(255, 255, 255, 0.16);
+  --text: #F4ECE4;
+  --muted: #A99C90;
+  --faint: #6E635A;
+  --accent: #E8835A;
+  --accent-2: #EAB36C;
+  --accent-soft: rgba(232, 131, 90, 0.16);
+  --pos: #6FBF74;
+  --neg: #E8835A;
+  --warn: #E0AE5E;
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.42), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55);
+  --blur: blur(22px) saturate(175%);
+  --blob1: rgba(232, 131, 90, 0.22);
+  --blob2: rgba(234, 179, 108, 0.18);
+  --blob3: rgba(206, 128, 108, 0.16);
+}
+
 @layer base {
   html,
   body {
-    @apply bg-paper text-ink;
-    font-family: "Be Vietnam Pro", sans-serif;
+    @apply text-ink;
+    background: var(--app-bg);
+    font-family: "Plus Jakarta Sans", sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.6s ease, color 0.4s ease;
   }
   /* Strip number-input spinners for a cleaner ledger look */
   input[type="number"]::-webkit-outer-spin-button,
@@ -20,32 +80,149 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--faint);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Motion --------------------------------------------------------------------
+   Entrance animations are transform-only (never opacity from 0) so content is
+   never invisible if a paint is paused. Apple-spring easing throughout. */
+@keyframes riseIn {
+  from { transform: translateY(14px); }
+  to { transform: none; }
+}
+@keyframes popIn {
+  from { transform: scale(0.96); }
+  to { transform: none; }
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.12); }
 }
 
 @layer components {
-  .field-input {
-    @apply w-full bg-transparent border-b border-hair px-1 py-1.5 font-mono text-ink outline-none focus:border-blueprint transition-colors;
-  }
-  .cell-input {
-    @apply w-full bg-transparent border-b border-transparent px-1 py-1 text-ink outline-none focus:border-blueprint transition-colors;
-  }
-  .btn {
-    @apply font-mono text-xs uppercase tracking-wider px-4 py-2 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
-  }
-  .btn-blue {
-    @apply border-blueprint text-blueprint hover:bg-blueprint hover:text-panel;
-  }
-  .btn-ghost {
-    @apply border-hair text-ink-muted hover:bg-red hover:border-red hover:text-white;
-  }
+  /* The core glass surface — replaces the old hard-bordered "panel". */
   .panel {
-    @apply bg-panel border-[1.5px] border-ink;
+    background: var(--glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--border);
+    border-top-color: var(--border-top);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
   }
+  /* A flatter, lighter glass for nested cards inside a panel. */
+  .panel-2 {
+    background: var(--glass-2);
+    border: 1px solid var(--border);
+    border-top-color: var(--border-top);
+    border-radius: 18px;
+  }
+
+  .field-input {
+    @apply w-full text-ink outline-none transition-colors;
+    background: var(--glass-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  .field-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    background: var(--surface-solid);
+  }
+
+  .cell-input {
+    @apply w-full bg-transparent text-ink outline-none transition-colors;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 8px;
+  }
+  .cell-input:focus {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  /* Secondary / glass button. */
+  .btn {
+    @apply inline-flex items-center justify-center font-semibold text-[12.5px] text-ink cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-top-color: var(--border-top);
+    border-radius: 13px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow);
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+  .btn:disabled:hover {
+    transform: none;
+    box-shadow: var(--shadow);
+  }
+
+  /* Primary action — terracotta→amber gradient. */
+  .btn-blue {
+    color: #fff;
+    background: linear-gradient(150deg, var(--accent), var(--accent-2));
+    border: none;
+    box-shadow: 0 6px 16px var(--accent-soft);
+  }
+  .btn-blue:hover {
+    color: #fff;
+  }
+
+  /* Subtle danger ghost button. */
+  .btn-ghost {
+    color: var(--neg);
+    background: transparent;
+    border: 1px dashed var(--border);
+    box-shadow: none;
+  }
+  .btn-ghost:hover {
+    background: var(--accent-soft);
+    box-shadow: none;
+  }
+
+  /* Small section label — sentence/upper-case sans (mono reserved for figures). */
   .label-mono {
-    @apply font-mono text-[10.5px] uppercase tracking-wider text-ink-muted;
+    @apply text-[10.5px] uppercase font-bold;
+    letter-spacing: 0.06em;
+    color: var(--faint);
   }
+
   .icon-btn {
-    @apply w-6 h-6 border border-hair text-ink-muted text-base leading-none rounded-sm hover:text-red hover:border-red transition-colors;
+    @apply inline-flex items-center justify-center text-ink-muted text-base leading-none transition-colors;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--glass);
+  }
+  .icon-btn:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* Soft status pill — pass color via inline style. */
+  .pill {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-bold;
+    padding: 4px 10px;
+    border-radius: 999px;
   }
 }
 
@@ -66,6 +243,15 @@
   }
   .no-print {
     display: none !important;
+  }
+  /* Glass surfaces don't print well — flatten them. */
+  .panel,
+  .panel-2 {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
   }
   /* Let the report use the full page width without app chrome padding */
   .print-root {

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CurrencyProvider } from "@/lib/currency";
+import { ThemeProvider, themeInitScript } from "@/lib/theme";
+import { Background } from "@/components/Background";
 
 export const metadata: Metadata = {
-  title: "Remodel Estimator",
+  title: "Real Project Manager",
   description:
     "Buy-rehab-hold remodel cost estimator and multi-year investment analysis.",
 };
@@ -14,9 +16,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply persisted theme before first paint to avoid a flash. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-screen">
-        <CurrencyProvider>{children}</CurrencyProvider>
+        <ThemeProvider>
+          <CurrencyProvider>
+            <Background />
+            <div className="relative z-10">{children}</div>
+          </CurrencyProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

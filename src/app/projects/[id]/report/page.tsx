@@ -16,12 +16,14 @@ import {
 import { useProjectContext } from "@/lib/projectContext";
 import { analyzeProject, totalRenovationCost } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
+import { useTheme } from "@/lib/theme";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
 
 export default function ReportPage() {
   const { project, loading, error } = useProjectContext();
   const { fmtMoney, currency } = useCurrency();
+  const { theme } = useTheme(); // re-render the chart colors when the theme flips
 
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
@@ -44,6 +46,20 @@ export default function ReportPage() {
     EBIT: Math.round(y.ebit),
     "Cash Flow": Math.round(y.cashFlow),
   }));
+
+  // Theme-aware chart colors pulled from the live CSS tokens (re-read on theme flip).
+  const css = typeof window !== "undefined" && theme ? getComputedStyle(document.documentElement) : null;
+  const cv = (name: string, fallback: string) => css?.getPropertyValue(name).trim() || fallback;
+  const COL = {
+    ebitda: cv("--accent", "#C65D3B"),
+    ebit: cv("--accent-2", "#DFA258"),
+    cash: cv("--pos", "#5AA15E"),
+    axis: cv("--muted", "#8C7E73"),
+    grid: cv("--border", "rgba(120,86,60,0.16)"),
+    text: cv("--text", "#2B2420"),
+    surface: cv("--surface-solid", "#FFFFFF"),
+  };
+  const monoFont = "JetBrains Mono";
 
   const yAxisFormatter = (v: number) => {
     if (currency === "VND") {
@@ -71,7 +87,7 @@ export default function ReportPage() {
       {/* ===================== PRINTABLE REPORT ===================== */}
       <article className="space-y-8">
         {/* Cover / header */}
-        <header className="print-avoid-break border-[1.5px] border-ink p-6 bg-panel">
+        <header className="print-avoid-break panel p-6">
           <div className="font-mono text-[11px] tracking-widest text-blueprint uppercase mb-2">
             Investment Summary · Prepared for Investors &amp; Shareholders
           </div>
@@ -97,7 +113,7 @@ export default function ReportPage() {
             <Kpi label="Cap Rate (Yr 1)" value={fmtPercent(returns.capRateYear1)} />
             <Kpi label="DSCR (Yr 1)" value={fmtNumber(returns.dscrYear1)} accent={(returns.dscrYear1 ?? 0) >= 1.25 ? "green" : (returns.dscrYear1 ?? 0) >= 1 ? "amber" : "red"} />
           </div>
-          <div className={`mt-3 border-[1.5px] p-4 bg-panel flex flex-wrap items-baseline gap-3 ${profitPositive ? "border-green" : "border-red"}`}>
+          <div className="mt-3 panel-2 p-4 flex flex-wrap items-baseline gap-3" style={{ borderColor: profitPositive ? "var(--pos)" : "var(--neg)" }}>
             <span className={`font-display font-extrabold text-lg uppercase ${profitPositive ? "text-green" : "text-red"}`}>
               {profitPositive ? "Projected Total Profit" : "Projected Total Loss"}
             </span>
@@ -115,13 +131,13 @@ export default function ReportPage() {
         <section className="print-avoid-break">
           <ReportHeading num="02" title="Capitalization" />
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="border-[1.5px] border-ink bg-panel divide-y divide-hair">
+            <div className="panel divide-y divide-hair overflow-hidden">
               <RowKV label="Purchase Price" value={fmtMoney(project.purchasePrice)} />
               <RowKV label="Closing Costs" value={fmtMoney(project.closingCosts)} />
               <RowKV label="Renovation Budget" value={fmtMoney(renoTotal)} />
               <RowKV label="Total Project Cost" value={fmtMoney(returns.totalProjectCost)} bold />
             </div>
-            <div className="border-[1.5px] border-ink bg-panel divide-y divide-hair">
+            <div className="panel divide-y divide-hair overflow-hidden">
               <RowKV label="Debt (Borrowed)" value={fmtMoney(project.borrowed)} />
               <RowKV label="Equity (Cash Invested)" value={fmtMoney(returns.cashInvested)} />
               <RowKV label="Interest Rate" value={`${fmtNumber(project.interestRate, 2)}%`} />
@@ -136,7 +152,7 @@ export default function ReportPage() {
         {/* Renovation scope */}
         <section className="print-avoid-break">
           <ReportHeading num="03" title="Renovation Scope & Budget" />
-          <div className="border-[1.5px] border-ink bg-panel overflow-hidden">
+          <div className="panel overflow-hidden">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
@@ -195,19 +211,23 @@ export default function ReportPage() {
         {/* Earnings chart */}
         <section className="print-avoid-break print-page-break">
           <ReportHeading num="06" title="Earnings & Cash Flow by Year" />
-          <div className="border-[1.5px] border-ink bg-panel p-5">
+          <div className="panel p-5">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,35,50,0.1)" />
-                  <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: "IBM Plex Mono" }} stroke="#64748B" />
-                  <YAxis tick={{ fontSize: 11, fontFamily: "IBM Plex Mono" }} stroke="#64748B" tickFormatter={yAxisFormatter} width={56} />
-                  <Tooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ fontFamily: "IBM Plex Mono", fontSize: 12, border: "1.5px solid #1A2332", background: "#FFFFFF" }} />
-                  <Legend wrapperStyle={{ fontFamily: "IBM Plex Mono", fontSize: 11 }} />
-                  <ReferenceLine y={0} stroke="#1A2332" />
-                  <Bar dataKey="EBITDA" fill="#1D4ED8" isAnimationActive={false} />
-                  <Bar dataKey="EBIT" fill="#92400E" isAnimationActive={false} />
-                  <Bar dataKey="Cash Flow" fill="#166534" isAnimationActive={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={COL.grid} />
+                  <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} />
+                  <YAxis tick={{ fontSize: 11, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} tickFormatter={yAxisFormatter} width={56} />
+                  <Tooltip
+                    formatter={(v: number) => fmtMoney(v)}
+                    cursor={{ fill: COL.grid }}
+                    contentStyle={{ fontFamily: monoFont, fontSize: 12, borderRadius: 12, border: `1px solid ${COL.grid}`, background: COL.surface, color: COL.text }}
+                  />
+                  <Legend wrapperStyle={{ fontFamily: monoFont, fontSize: 11, color: COL.axis }} />
+                  <ReferenceLine y={0} stroke={COL.axis} />
+                  <Bar dataKey="EBITDA" fill={COL.ebitda} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="EBIT" fill={COL.ebit} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="Cash Flow" fill={COL.cash} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -217,7 +237,7 @@ export default function ReportPage() {
         {/* Pro forma */}
         <section className="print-avoid-break">
           <ReportHeading num="07" title="Operating Pro Forma" />
-          <div className="border-[1.5px] border-ink bg-panel overflow-x-auto">
+          <div className="panel overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
@@ -248,7 +268,7 @@ export default function ReportPage() {
         {/* Exit */}
         <section className="print-avoid-break">
           <ReportHeading num="08" title={`Exit Summary — End of Year ${project.holdYears}`} />
-          <div className="border-[1.5px] border-ink bg-panel divide-y divide-hair">
+          <div className="panel divide-y divide-hair overflow-hidden">
             <RowKV label="Projected Sale Price" value={fmtMoney(exit.exitValue)} />
             <RowKV label="Selling Costs" value={fmtMoney(-exit.sellingCosts)} muted />
             <RowKV label="Loan Payoff" value={fmtMoney(-exit.loanPayoff)} muted />
@@ -286,7 +306,7 @@ function ReportHeading({ num, title }: { num: string; title: string }) {
 function Kpi({ label, value, accent, big }: { label: string; value: string; accent?: "green" | "red" | "amber"; big?: boolean }) {
   const color = accent === "green" ? "text-green" : accent === "red" ? "text-red" : accent === "amber" ? "text-amber" : "text-ink";
   return (
-    <div className="border-[1.5px] border-ink bg-panel p-3.5">
+    <div className="panel-2 p-3.5">
       <div className="label-mono mb-1">{label}</div>
       <div className={`font-mono font-bold ${big ? "text-xl" : "text-base"} ${color}`}>{value}</div>
     </div>
@@ -329,7 +349,7 @@ function FreqTable({
 }) {
   const annualTotal = rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0);
   return (
-    <div className="border-[1.5px] border-ink bg-panel overflow-hidden">
+    <div className="panel overflow-hidden">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b-[1.5px] border-ink">

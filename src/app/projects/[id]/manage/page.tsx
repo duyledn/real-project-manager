@@ -14,6 +14,7 @@ import { SaveIndicator, SectionHeader, TextField, DateField, DragHandle } from "
 import { useDragReorder, moveItem } from "@/lib/useDragReorder";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobTimeline } from "@/components/JobTimeline";
+import { JobsBidsBoard } from "@/components/JobsBidsBoard";
 
 export default function ManagePage() {
   const { project, setProject, loading, error, saveState } = useProjectContext();
@@ -25,6 +26,17 @@ export default function ManagePage() {
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const [deepLinkJob, setDeepLinkJob] = useState<string | null>(null);
+
+  // Deep-link from the Dashboard's "Review" action: ?job=<id> selects that job
+  // in the board and opens its drawer.
+  useEffect(() => {
+    const jid = new URLSearchParams(window.location.search).get("job");
+    if (jid) {
+      setDeepLinkJob(jid);
+      setSelectedJobId(jid);
+    }
+  }, []);
   const jobsDrag = useDragReorder((from, to) =>
     setProject((p) => ({ ...p, jobs: moveItem(p.jobs, from, to) })),
   );
@@ -105,7 +117,7 @@ export default function ManagePage() {
       {/* Title + save */}
       <div className="panel p-5 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <div className="label-mono mb-1">Phase 2 · Project Management</div>
+          <div className="label-mono mb-1">Jobs & Bids</div>
           <h1 className="font-display font-extrabold text-3xl leading-none">{project.name}</h1>
         </div>
         <SaveIndicator state={saveState} />
@@ -287,11 +299,23 @@ export default function ManagePage() {
         </button>
       </section>
 
-      {/* 04 — Timeline */}
+      {/* 04 — Bids board (Kanban / Spreadsheet) */}
+      <section>
+        <SectionHeader num="04" title="Bids" caption="Track every bid as a Kanban board (drag to change status) or an Excel-style spreadsheet across all jobs." />
+        <JobsBidsBoard
+          project={project}
+          setProject={setProject}
+          subs={subs}
+          categories={categories}
+          initialJobId={deepLinkJob}
+        />
+      </section>
+
+      {/* 05 — Timeline */}
       {project.jobs.length > 0 && (
         <section>
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <SectionHeader num="04" title="Timeline" caption="Each job positioned by its start and (optional) end date. Click a bar to configure the job." />
+            <SectionHeader num="05" title="Timeline" caption="Each job positioned by its start and (optional) end date. Click a bar to configure the job." />
             <button onClick={() => setTimelineExpanded(true)} className="btn inline-flex items-center gap-1.5 shrink-0">
               <Maximize2 size={14} /> Expand
             </button>
@@ -316,7 +340,7 @@ export default function ManagePage() {
           >
             <div className="flex items-center justify-between px-5 py-3 border-b-[1.5px] border-ink shrink-0">
               <div>
-                <div className="label-mono">Phase 2 · Timeline</div>
+                <div className="label-mono">Schedule · Timeline</div>
                 <h2 className="font-display font-extrabold text-xl leading-none mt-0.5">{project.name}</h2>
               </div>
               <button onClick={() => setTimelineExpanded(false)} className="btn inline-flex items-center gap-1.5">

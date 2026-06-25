@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Plus, X, Copy, Check, Table2, LayoutGrid, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Plus, X, Copy, Check, Table2, LayoutGrid, Trash2, SlidersHorizontal, Eye, Maximize2 } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
-import { totalRenovationCost, annualRoomRevenue } from "@/lib/calculations";
+import { totalRenovationCost, annualRoomRevenue, analyzeProject } from "@/lib/calculations";
+import { fmtPercent, fmtMultiple } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
-import { NumberField, MoneyInput, MoneyField, currencySymbol, TextField, ToggleField, SaveIndicator, SectionHeader, DragHandle } from "@/components/fields";
+import { NumberField, MoneyInput, MoneyField, currencySymbol, TextField, ToggleField, SaveIndicator, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
 import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { copyRowsAsTSV } from "@/lib/clipboard";
@@ -26,6 +27,13 @@ export default function InputsPage() {
   const [itemsView, setItemsView] = useState<"table" | "grouped">("table");
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [itemsCopied, setItemsCopied] = useState(false);
+
+  // Assumptions: display vs edit, and the full-detail expand sheet.
+  const [adjustMode, setAdjustMode] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Live KPIs straight from the engine — never stored, always re-derived.
+  const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
   if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
   if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
@@ -129,6 +137,28 @@ export default function InputsPage() {
         />
         <SaveIndicator state={saveState} />
       </div>
+
+      {/* Headline KPIs — live from the calculation engine */}
+      {analysis && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {[
+            { label: "IRR (levered)", value: fmtPercent(analysis.returns.irr), tone: (analysis.returns.irr ?? 0) >= 0 ? "pos" : "neg" },
+            { label: "Equity multiple", value: fmtMultiple(analysis.returns.equityMultiple), tone: "text" },
+            { label: "Cash-on-cash · Yr 1", value: fmtPercent(analysis.returns.cashOnCashYear1), tone: "text" },
+            { label: "Cap rate · Yr 1", value: fmtPercent(analysis.returns.capRateYear1), tone: "text" },
+          ].map((k) => (
+            <div key={k.label} className="panel-2 p-[18px]">
+              <div className="text-xs text-ink-muted font-semibold">{k.label}</div>
+              <div
+                className="font-mono text-[27px] font-extrabold tracking-tight mt-2"
+                style={{ color: k.tone === "pos" ? "var(--pos)" : k.tone === "neg" ? "var(--neg)" : "var(--text)" }}
+              >
+                {k.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ===== GROUP A — Construction Estimate ===== */}
       <GroupBanner
@@ -267,6 +297,28 @@ export default function InputsPage() {
         caption="The buy-rehab-hold model: how you acquire and finance the property, hold-period assumptions, income, expenses, and exit. Drives the Analysis, Math, and Report tabs."
       />
 
+      {/* Assumptions toolbar — Adjust (edit) + Expand all */}
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <div className="font-display font-bold text-lg">Assumptions</div>
+          <div className="text-sm text-ink-muted mt-0.5">
+            {adjustMode
+              ? "Editing — every change autosaves and recalculates live."
+              : "Read-only display. Toggle Adjust to edit the fields."}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setAdjustMode((a) => !a)} className={adjustMode ? "btn btn-blue gap-1.5" : "btn gap-1.5"}>
+            {adjustMode ? <Eye size={16} /> : <SlidersHorizontal size={16} />}
+            {adjustMode ? "Done" : "Adjust"}
+          </button>
+          <button onClick={() => setExpanded(true)} className="btn gap-1.5">
+            <Maximize2 size={16} /> Expand all
+          </button>
+        </div>
+      </div>
+
+      <EditModeProvider readOnly={!adjustMode}>
       {/* 01 — Acquisition */}
       <section>
         <SectionHeader num="01" title="Acquisition & Basis" caption="What you pay for the property, and how much of it is non-depreciable land." />
@@ -381,6 +433,133 @@ export default function InputsPage() {
           <NumberField label="Depreciation Recapture Tax" suffix="%" step={1} min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} hint="Tax on depreciation taken, due at sale. ~25% in the US. Set 0 to ignore." />
         </div>
       </section>
+      </EditModeProvider>
+
+      {expanded && (
+        <ExpandAllSheet
+          project={project}
+          patch={patch}
+          renoTotal={renoTotal}
+          netProfit={analysis ? analysis.returns.totalProfit : 0}
+          fmtMoney={fmtMoney}
+          onClose={() => setExpanded(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// --- Full-detail expand sheet: every assumption, one scrollable layout -------
+function ExpandAllSheet({
+  project,
+  patch,
+  renoTotal,
+  netProfit,
+  fmtMoney,
+  onClose,
+}: {
+  project: Project;
+  patch: (updater: (p: Project) => Project) => void;
+  renoTotal: number;
+  netProfit: number;
+  fmtMoney: (n: number | null | undefined) => string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
+      style={{ background: "rgba(20,12,8,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-[940px] max-w-full flex flex-col"
+        style={{
+          maxHeight: "88vh",
+          borderRadius: 24,
+          background: "var(--glass-strong)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid var(--border)",
+          borderTopColor: "var(--border-top)",
+          boxShadow: "var(--shadow-lg)",
+          animation: "popIn .3s cubic-bezier(.32,.72,0,1) both",
+        }}
+      >
+        <div className="flex items-center justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">Full detail</div>
+            <div className="text-xl font-extrabold tracking-tight mt-0.5">All inputs &amp; assumptions</div>
+          </div>
+          <button onClick={onClose} className="icon-btn" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-5 sm:p-6">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="panel-2 p-[18px]">
+              <div className="font-display font-bold text-base mb-3">Acquisition &amp; rehab</div>
+              <div className="grid grid-cols-1 gap-4">
+                <MoneyField label="Purchase price" min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
+                <MoneyField label="Closing costs" min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
+                <NumberField label="Land portion" suffix="%" min={0} value={project.landPercent} onChange={(v) => patch((p) => ({ ...p, landPercent: v }))} />
+                <div className="flex items-center justify-between pt-1">
+                  <span className="label-mono">Renovation budget</span>
+                  <span className="font-mono font-semibold">{fmtMoney(renoTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel-2 p-[18px]">
+              <div className="font-display font-bold text-base mb-3">Financing</div>
+              <div className="grid grid-cols-1 gap-4">
+                <MoneyField label="Borrowed capital" min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
+                <NumberField label="Annual interest rate" suffix="%" min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
+                <NumberField label="Construction period" suffix="mo" min={0} value={project.constructionMonths} onChange={(v) => patch((p) => ({ ...p, constructionMonths: Math.round(v) }))} />
+                <ToggleField label="Loan type after rehab" value={project.amortize} onChange={(v) => patch((p) => ({ ...p, amortize: v }))} trueLabel="Amortizing P&I" falseLabel="Interest-only" />
+                <NumberField label="Amortization term" suffix="yr" min={1} value={project.loanTermYears} onChange={(v) => patch((p) => ({ ...p, loanTermYears: Math.round(v) }))} />
+              </div>
+            </div>
+
+            <div className="panel-2 p-[18px]">
+              <div className="font-display font-bold text-base mb-3">Operating &amp; hold</div>
+              <div className="grid grid-cols-1 gap-4">
+                <NumberField label="Hold period" suffix="yr" min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} />
+                <NumberField label="Rent growth" suffix="%/yr" value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
+                <NumberField label="Expense growth" suffix="%/yr" value={project.expenseGrowthRate} onChange={(v) => patch((p) => ({ ...p, expenseGrowthRate: v }))} />
+                <NumberField label="Vacancy allowance" suffix="%" min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} />
+              </div>
+            </div>
+
+            <div className="panel-2 p-[18px]">
+              <div className="font-display font-bold text-base mb-3">Revenue &amp; exit</div>
+              <div className="grid grid-cols-1 gap-4">
+                <NumberField label="Number of rooms" min={0} value={project.rooms} onChange={(v) => patch((p) => ({ ...p, rooms: Math.round(v) }))} />
+                <MoneyField label="Average daily room revenue" min={0} value={project.adr} onChange={(v) => patch((p) => ({ ...p, adr: v }))} />
+                <NumberField label="Appreciation rate" suffix="%/yr" value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} />
+                <MoneyField label="Exit value override" min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} />
+                <NumberField label="Selling costs" suffix="%" min={0} value={project.sellingCostPercent} onChange={(v) => patch((p) => ({ ...p, sellingCostPercent: v }))} />
+                <NumberField label="Marginal tax rate" suffix="%" min={0} value={project.taxRate} onChange={(v) => patch((p) => ({ ...p, taxRate: v }))} />
+                <NumberField label="Depreciation life" suffix="yr" min={1} value={project.depreciationLifeYears} onChange={(v) => patch((p) => ({ ...p, depreciationLifeYears: v }))} />
+                <NumberField label="Depreciation recapture tax" suffix="%" min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[12.5px] text-ink-muted font-semibold">Projected net profit</span>
+            <span className="font-mono text-xl font-extrabold" style={{ color: netProfit >= 0 ? "var(--pos)" : "var(--neg)" }}>
+              {fmtMoney(netProfit)}
+            </span>
+          </div>
+          <button onClick={onClose} className="btn btn-blue gap-1.5">
+            <Check size={16} /> Done
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

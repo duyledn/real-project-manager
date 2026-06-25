@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Check, Loader2, AlertCircle, GripVertical } from "lucide-react";
 import type { DragHandleProps } from "@/lib/useDragReorder";
 import { useCurrency } from "@/lib/currency";
+
+// --- Edit mode -------------------------------------------------------------
+// Lets a section flip its labeled fields between editable and read-only display
+// without changing any bindings. Defaults to editable, so fields used outside a
+// provider (e.g. the manage page) are unaffected.
+const EditModeContext = createContext<boolean>(false);
+export function EditModeProvider({ readOnly, children }: { readOnly: boolean; children: ReactNode }) {
+  return <EditModeContext.Provider value={readOnly}>{children}</EditModeContext.Provider>;
+}
+export function useEditReadOnly(): boolean {
+  return useContext(EditModeContext);
+}
 
 // --- Number input with thousands separators --------------------------------
 
@@ -77,6 +89,7 @@ export function NumberInput({
   placeholder,
   ariaLabel,
   onKeyDown,
+  readOnly,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -85,6 +98,7 @@ export function NumberInput({
   placeholder?: string;
   ariaLabel?: string;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  readOnly?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(() => fmtFull(value));
@@ -126,6 +140,8 @@ export function NumberInput({
       value={text}
       placeholder={placeholder}
       aria-label={ariaLabel}
+      readOnly={readOnly}
+      tabIndex={readOnly ? -1 : undefined}
       onChange={handleChange}
       onKeyDown={onKeyDown}
       onBlur={() => setText(fmtFull(value))}
@@ -151,6 +167,7 @@ export function MoneyInput({
   className,
   onKeyDown,
   ariaLabel,
+  readOnly,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -158,6 +175,7 @@ export function MoneyInput({
   className?: string;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   ariaLabel?: string;
+  readOnly?: boolean;
 }) {
   return (
     <NumberInput
@@ -166,6 +184,7 @@ export function MoneyInput({
       ariaLabel={ariaLabel}
       className={className}
       onKeyDown={onKeyDown}
+      readOnly={readOnly}
       onChange={onChange}
     />
   );
@@ -213,21 +232,23 @@ interface NumberFieldProps {
 }
 
 export function NumberField({ label, value, onChange, prefix, suffix, min, hint }: NumberFieldProps) {
+  const ro = useEditReadOnly();
   return (
     <label className="flex flex-col gap-1.5">
       <span className="label-mono">{label}</span>
-      <span className="flex items-baseline gap-1 border-b-[1.5px] border-hair focus-within:border-blueprint pb-1.5 transition-colors">
+      <span className={`flex items-baseline gap-1 border-b-[1.5px] pb-1.5 transition-colors ${ro ? "border-transparent" : "border-hair focus-within:border-blueprint"}`}>
         {prefix && <span className="font-mono text-ink-muted text-sm">{prefix}</span>}
         <NumberInput
           value={value}
           onChange={onChange}
           min={min}
           ariaLabel={label}
-          className="w-full bg-transparent font-mono text-base font-semibold text-ink outline-none"
+          readOnly={ro}
+          className={`w-full bg-transparent font-mono text-base font-semibold outline-none ${ro ? "text-ink-muted cursor-default" : "text-ink"}`}
         />
         {suffix && <span className="font-mono text-ink-muted text-sm">{suffix}</span>}
       </span>
-      {hint && <span className="text-[11px] text-ink-muted leading-tight">{hint}</span>}
+      {hint && !ro && <span className="text-[11px] text-ink-muted leading-tight">{hint}</span>}
     </label>
   );
 }
@@ -236,20 +257,22 @@ export function NumberField({ label, value, onChange, prefix, suffix, min, hint 
  *  the entered value is stored verbatim in that currency (no live conversion). */
 export function MoneyField({ label, value, onChange, min, hint }: { label: string; value: number; onChange: (v: number) => void; min?: number; hint?: string }) {
   const { currency } = useCurrency();
+  const ro = useEditReadOnly();
   return (
     <label className="flex flex-col gap-1.5">
       <span className="label-mono">{label}</span>
-      <span className="flex items-baseline gap-1 border-b-[1.5px] border-hair focus-within:border-blueprint pb-1.5 transition-colors">
+      <span className={`flex items-baseline gap-1 border-b-[1.5px] pb-1.5 transition-colors ${ro ? "border-transparent" : "border-hair focus-within:border-blueprint"}`}>
         <span className="font-mono text-ink-muted text-sm">{currencySymbol(currency)}</span>
         <MoneyInput
           value={value}
           onChange={onChange}
           min={min}
           ariaLabel={label}
-          className="w-full bg-transparent font-mono text-base font-semibold text-ink outline-none"
+          readOnly={ro}
+          className={`w-full bg-transparent font-mono text-base font-semibold outline-none ${ro ? "text-ink-muted cursor-default" : "text-ink"}`}
         />
       </span>
-      {hint && <span className="text-[11px] text-ink-muted leading-tight">{hint}</span>}
+      {hint && !ro && <span className="text-[11px] text-ink-muted leading-tight">{hint}</span>}
     </label>
   );
 }

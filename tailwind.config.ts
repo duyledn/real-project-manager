@@ -2,23 +2,39 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  darkMode: ["selector", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        paper: "#F1F3F5",
-        panel: "#FFFFFF",
-        ink: "#1A2332",
-        "ink-muted": "#64748B",
-        blueprint: "#1D4ED8",
-        amber: "#92400E",
-        green: "#166534",
-        red: "#991B1B",
-        hair: "rgba(26,35,50,0.14)",
+        // Existing token names are kept but re-pointed at the warm-glass
+        // CSS variables so every screen re-skins (and gains dark mode) for free.
+        paper: "var(--glass-2)",
+        panel: "var(--surface-solid)",
+        ink: "var(--text)",
+        "ink-muted": "var(--muted)",
+        faint: "var(--faint)",
+        blueprint: "var(--accent)", // the old "primary" is now terracotta
+        accent: "var(--accent)",
+        "accent-2": "var(--accent-2)",
+        amber: "var(--accent-2)",
+        warn: "var(--warn)",
+        green: "var(--pos)",
+        red: "var(--neg)",
+        hair: "var(--border)",
+        glass: "var(--glass)",
+        "glass-strong": "var(--glass-strong)",
       },
       fontFamily: {
-        display: ["Be Vietnam Pro", "sans-serif"],
-        sans: ["Be Vietnam Pro", "sans-serif"],
-        mono: ["IBM Plex Mono", "monospace"],
+        display: ["Plus Jakarta Sans", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+      borderRadius: {
+        glass: "20px",
+        card: "22px",
+      },
+      transitionTimingFunction: {
+        spring: "cubic-bezier(.32,.72,0,1)",
       },
     },
   },
