@@ -1,0 +1,528 @@
+[
+  {
+    "name": "Nếp Home",
+    "startDate": "",
+    "projectAddress": "456 Oak Ave, Springfield",
+    "projectManager": "",
+    "owner": "",
+    "generalContractor": "",
+    "companyName": "123 Construction",
+    "senderName": "Duy",
+    "plansLink": "https://drive.google.com/plans-link",
+    "jobs": [
+      {
+        "id": "e304d2b0-2912-4861-9487-59fc69f90b4d",
+        "category": "Designing",
+        "startDate": "2026-06-18",
+        "endDate": "",
+        "status": "Bid Approved",
+        "approvedBidderId": "aa8f6550-bc81-4658-b9b3-cc1a07523764",
+        "color": "",
+        "bidders": [
+          {
+            "id": "aa8f6550-bc81-4658-b9b3-cc1a07523764",
+            "subcontractorId": "8f8bdb3b-1f3b-44b5-a8b5-d6de045bb817",
+            "bidPrice": 15000,
+            "status": "Bid approved",
+            "bidLink": ""
+          }
+        ]
+      },
+      {
+        "id": "514cb58a-b52e-4f77-a48f-835d0dd88b87",
+        "category": "Designing",
+        "startDate": "2026-06-18",
+        "endDate": "",
+        "status": "N/A",
+        "approvedBidderId": null,
+        "color": "#EA580C",
+        "bidders": []
+      }
+    ],
+    "purchasePrice": 1000000,
+    "closingCosts": 0,
+    "landPercent": 100,
+    "borrowed": 78431.37254901961,
+    "interestRate": 7.5,
+    "constructionMonths": 4,
+    "amortize": true,
+    "loanTermYears": 30,
+    "holdYears": 4,
+    "rentGrowthRate": 0.35,
+    "expenseGrowthRate": 3.5,
+    "vacancyRate": 25,
+    "rooms": 0,
+    "adr": 0,
+    "appreciationRate": 3.5,
+    "exitValueOverride": null,
+    "sellingCostPercent": 7,
+    "taxRate": 24,
+    "depreciationLifeYears": 27.5,
+    "recaptureTaxRate": 25,
+    "items": [
+      {
+        "id": "2e44925c-389b-4e4e-b8c6-e7b9af6b2420",
+        "description": "Giấy tờ / hồ sơ",
+        "category": "Permits & Fees",
+        "qty": 1,
+        "unitCost": 784.3137254901961,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "901b745d-02ce-4025-ad3b-e631b2549e40",
+        "description": "Dự phòng",
+        "category": "Contingency",
+        "qty": 1,
+        "unitCost": 784.3137254901961,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "87b41a4e-2e09-4bde-aef2-8994bb09a16d",
+        "description": "Làm nước",
+        "category": "Labor",
+        "qty": 1,
+        "unitCost": 1960.7843137254902,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "febc2dff-5b82-4e3a-8ed5-4af487aa3548",
+        "description": "Làm điện",
+        "category": "Labor",
+        "qty": 1,
+        "unitCost": 1960.7843137254902,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "3dfcee44-d5df-4d35-a714-62d2a4614817",
+        "description": "Làm tường",
+        "category": "Labor",
+        "qty": 60,
+        "unitCost": 12.941176470588236,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "321d5772-8914-4aa5-9048-bc43eaefba35",
+        "description": "Làm finish",
+        "category": "Labor",
+        "qty": 1,
+        "unitCost": 588.2352941176471,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "c890893c-2c7b-4427-9de1-2b59db8f4ec3",
+        "description": "Làm khung sắt khu bếp",
+        "category": "Materials",
+        "qty": 20,
+        "unitCost": 141.1764705882353,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "c2b08792-468c-428a-9698-ad0db08cab47",
+        "description": "Làm vườn",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 1176.4705882352941,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "21855bf1-1ada-4b6f-a7a3-5b3d97b62b5e",
+        "description": "Trần thạch cao",
+        "category": "Materials",
+        "qty": 120,
+        "unitCost": 11.764705882352942,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "2f4c7f5c-4dcf-4b58-8609-a7886201e35b",
+        "description": "Sàn nhà Ceramic",
+        "category": "Materials",
+        "qty": 120,
+        "unitCost": 11.764705882352942,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "e65b26df-8d50-405e-9c60-1ce872a67d11",
+        "description": "Mái tôn xốp cách nhiệt",
+        "category": "Materials",
+        "qty": 107,
+        "unitCost": 17.647058823529413,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "d70d7d78-1380-44d9-9e67-cb838750b31b",
+        "description": "Tủ Gỗ",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 137.2549019607843,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "ed31db4f-21f6-460d-a297-ef48e58a4a7d",
+        "description": "Giường gỗ",
+        "category": "Materials",
+        "qty": 6,
+        "unitCost": 274.5098039215686,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "838e6727-029f-4f00-bc69-637b7705c2b6",
+        "description": "Điều hòa",
+        "category": "Materials",
+        "qty": 2,
+        "unitCost": 392.15686274509807,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "27f56baf-0f6a-47a8-a19e-6ee8190c2a3e",
+        "description": "Bàn ghế gỗ",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 117.6470588235294,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "4c1a06a0-4dc5-4dcf-9752-5f33f318a0e3",
+        "description": "Cửa kính ra vào (to)",
+        "category": "Materials",
+        "qty": 4,
+        "unitCost": 392.15686274509807,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "549fe8cd-0231-40d3-a5b9-d2ee6a51b343",
+        "description": "Cửa sổ",
+        "category": "Materials",
+        "qty": 4,
+        "unitCost": 78.43137254901961,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "78960b6c-5e7f-4a38-887c-5082d40804f0",
+        "description": "Tủ Bếp",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 470.5882352941176,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "0d81a89f-5535-4bf3-8994-a0479beb3f87",
+        "description": "Bếp từ",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 470.5882352941176,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "a25cd13e-4c66-49a8-8b50-e0ee3e01f62c",
+        "description": "Tủ Lạnh",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 627.4509803921569,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "d110a20f-cb58-4cef-9c53-1b8e1689f1ad",
+        "description": "Cầu thang sắt",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 50.98039215686274,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "05c9a7c0-3b86-4168-862a-2d27e501f8c9",
+        "description": "Bộ bàn ăn cao cấp",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 392.15686274509807,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "79d23b25-4e47-4b34-b806-e7b41d627652",
+        "description": "Tường ốp gạch NVS",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 862.7450980392157,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "854cbafd-18a5-4e71-9775-d9d2a243331d",
+        "description": "Cửa gỗ công nghiệp",
+        "category": "Materials",
+        "qty": 12,
+        "unitCost": 196.07843137254903,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "77868c20-0eeb-4534-92ba-402d369b7c3e",
+        "description": "Vòi sen",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 235.2941176470588,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "9a87a8c1-197f-4795-a0f0-3ddca40f53cd",
+        "description": "Bồn cầu",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 196.07843137254903,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "1cb76709-a1a6-4395-b259-7fc0e2eded80",
+        "description": "Bồn rửa mặt",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 156.86274509803923,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "22a9bb55-005b-4a3e-bbb2-bd1e1d091bfb",
+        "description": "Gương",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 11.764705882352942,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "a25d18b3-9308-4db6-ade4-544bfe19ef99",
+        "description": "Rèm cửa",
+        "category": "Materials",
+        "qty": 2,
+        "unitCost": 39.21568627450981,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "7e9c4010-3b44-4c50-9a02-566eafb68f06",
+        "description": "Rèm cửa sổ",
+        "category": "Materials",
+        "qty": 4,
+        "unitCost": 33.333333333333336,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "97220446-8f7c-4014-9cc7-26c4453f4be2",
+        "description": "Đèn đọc sách",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 54.90196078431372,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "ebea9f47-3865-4d98-ae4b-5e040599fda2",
+        "description": "Đèn trần phòng",
+        "category": "Materials",
+        "qty": 6,
+        "unitCost": 43.13725490196079,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "748b9f94-bf2b-4d1b-ba38-9c12d6a56627",
+        "description": "Đèn trần không gian chung",
+        "category": "Materials",
+        "qty": 2,
+        "unitCost": 78.43137254901961,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "ad39e0aa-ec45-41c3-aeb7-094296db05f0",
+        "description": "Đèn tường ext",
+        "category": "Materials",
+        "qty": 11,
+        "unitCost": 14.313725490196079,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "d6f9d321-eff7-471f-bda6-a29c774d1786",
+        "description": "Đèn tường int",
+        "category": "Materials",
+        "qty": 3,
+        "unitCost": 9.803921568627452,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "49b7c368-3861-43d3-8524-823eadf3d24c",
+        "description": "Đèn hành lang",
+        "category": "Materials",
+        "qty": 3,
+        "unitCost": 9.803921568627452,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "e6c083df-dede-47a5-8350-1733d9e2083f",
+        "description": "Đèn cây cối",
+        "category": "Materials",
+        "qty": 5,
+        "unitCost": 6.666666666666667,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "6dfcd2b2-90b7-42b8-adb9-59236bb554aa",
+        "description": "Chăn ga",
+        "category": "Materials",
+        "qty": 14,
+        "unitCost": 78.43137254901961,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "065877be-0553-444c-981d-3921372f5fc1",
+        "description": "Gối",
+        "category": "Materials",
+        "qty": 12,
+        "unitCost": 5.882352941176471,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "32d724ac-5396-4374-8073-f2a793397294",
+        "description": "Nệm Queen",
+        "category": "Materials",
+        "qty": 4,
+        "unitCost": 196.07843137254903,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "b0d362c6-081d-4795-80de-5175ec9ec6a2",
+        "description": "Nệm King",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 235.2941176470588,
+        "color": "",
+        "groupId": ""
+      },
+      {
+        "id": "7dd45fdd-67bd-40da-b4bd-d6c022cdc94a",
+        "description": "Nệm Twin",
+        "category": "Materials",
+        "qty": 2,
+        "unitCost": 156.86274509803923,
+        "color": "",
+        "groupId": ""
+      }
+    ],
+    "itemGroups": [],
+    "expenses": [
+      {
+        "id": "c1c09e58-498e-4021-9db5-a49c21596228",
+        "label": "Property management (8%)",
+        "category": "Management",
+        "amount": 2300,
+        "frequency": "monthly"
+      },
+      {
+        "id": "1db52f2e-cb39-4fbd-b4da-36d0b816fd9f",
+        "label": "Maintenance & repairs",
+        "category": "Maintenance",
+        "amount": 1800,
+        "frequency": "monthly"
+      }
+    ],
+    "incomes": [],
+    "id": "700facdd-91be-4226-aad7-28a175dc11d7",
+    "createdAt": "2026-06-18T06:58:41.633Z",
+    "updatedAt": "2026-06-23T23:04:16.145Z"
+  },
+  {
+    "name": "10 Dương Tụ Quán",
+    "startDate": "2026-06-20",
+    "projectAddress": "",
+    "projectManager": "",
+    "owner": "",
+    "generalContractor": "",
+    "companyName": "",
+    "senderName": "",
+    "plansLink": "",
+    "jobs": [],
+    "purchasePrice": 2000000,
+    "closingCosts": 0,
+    "landPercent": 100,
+    "borrowed": 1000000,
+    "interestRate": 6.5,
+    "constructionMonths": 12,
+    "amortize": true,
+    "loanTermYears": 3,
+    "holdYears": 10,
+    "rentGrowthRate": 3,
+    "expenseGrowthRate": 3,
+    "vacancyRate": 25,
+    "appreciationRate": 3.5,
+    "exitValueOverride": null,
+    "sellingCostPercent": 2,
+    "taxRate": 24,
+    "depreciationLifeYears": 10,
+    "items": [
+      {
+        "id": "e160f2ae-a144-42fb-bb19-2e909818ff1d",
+        "description": "Construction",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 1000000,
+        "color": "",
+        "groupId": ""
+      }
+    ],
+    "expenses": [
+      {
+        "id": "acca3a11-f984-4600-9f99-92e585a54156",
+        "label": "Operating",
+        "category": "Other",
+        "amount": 400000,
+        "frequency": "annual"
+      }
+    ],
+    "incomes": [
+      {
+        "id": "af6f64d1-d845-4415-af04-6c54a9b6007d",
+        "label": "Income",
+        "amount": 600000,
+        "frequency": "annual"
+      }
+    ],
+    "id": "42824381-2aca-45a5-8453-9d58560cf6fc",
+    "createdAt": "2026-06-20T07:33:24.740Z",
+    "updatedAt": "2026-06-20T07:39:48.656Z",
+    "rooms": 0,
+    "adr": 0,
+    "recaptureTaxRate": 25,
+    "itemGroups": []
+  }
+]

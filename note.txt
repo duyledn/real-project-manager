@@ -1,0 +1,25 @@
+For each new project, put all the features that you've made into Phase 1. Preparations and calculation. 
+
+For Phase 2, please add the following features that I can use to continuously work on my project:
+
+
+
+
+
+A database that I can edit in a different page that has the information of all the subcontractors that I work with. including an input space for their information like Company Name, Representative Name, Phone number, email, Worker's Compensation, W-9, Business License.
+
+
+
+In the main tab, add the following feature: Add and remove different bids from different contractors. Each bids, I can select a category (that I can add more to or remove the category in the same dropdown box, these options for the categories would synchronize across all projects, meaning if I add one option in project 1, that option would show up if I were to move to Project 2. Similarly, the program would update the same if I remove an option.) 
+
+
+
+For each bid, I can set the bid price, the status (Not sent, sent, received, negotiated, accepted, work-in-progress, partially-paid, fully-paid), select the bidder from the subcontractor database, and the option to upload a file that contains their bid that they sent over email. 
+
+
+
+In the scheduling tab, I can add and remove each phase of the construction process, and link each phase to the related bids that I've received from the subcontractors. 
+
+
+
+Create a file management tab that 
