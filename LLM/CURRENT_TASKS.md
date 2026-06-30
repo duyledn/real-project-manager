@@ -1,7 +1,7 @@
 # Current Tasks
 
 ## Active
-_None - awaiting first task from user._
+- Postgres Storage Driver - Status: needs-handoff (ready to send to Coding LLM) - Handoff: `LLM/handoffs/postgres-storage.md` - Context: `LLM/context/postgres-storage.md`
 
 <!--
 Keep Active tasks minimal. Prefer ONE active "current" task at a time.
