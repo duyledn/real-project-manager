@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:calcs": "tsx scripts/verify-calcs.ts",
-    "test:api": "tsx scripts/test-api.ts"
+    "test:api": "tsx scripts/test-api.ts",
+    "migrate:postgres": "tsx scripts/migrate-to-postgres.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

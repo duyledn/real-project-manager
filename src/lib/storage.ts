@@ -46,6 +46,7 @@ import { totalRenovationCost } from "./calculations";
 import { analyzeProject } from "./calculations";
 import { DEFAULT_JOB_CATEGORIES } from "./jobs";
 import { hashSecret } from "./auth/secret";
+import { isPostgres, sql } from "./db";
 
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
@@ -118,6 +119,98 @@ function toSummary(p: Project): ProjectSummary {
     // +1 for the company owner; canDelete is filled in per-viewer by the API.
     memberCount: new Set(Array.isArray(p.memberIds) ? p.memberIds : []).size + 1,
     canDelete: false,
+  };
+}
+
+function parseJsonColumn<T>(value: unknown): T {
+  if (typeof value === "string") return JSON.parse(value) as T;
+  return value as T;
+}
+
+function jsonColumn(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+function dbString(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
+type ProjectRow = {
+  data: unknown;
+};
+
+type SubcontractorRow = {
+  id: string;
+  company_name: string;
+  representative_name: string;
+  phone: string;
+  email: string;
+  workers_comp: string;
+  w9: string;
+  business_license: string;
+  created_at: unknown;
+  updated_at: unknown;
+};
+
+type JobCategoriesRow = {
+  categories: unknown;
+};
+
+type UserRow = {
+  id: string;
+  tag: string;
+  username: string;
+  password: string;
+  pin: string;
+  role: User["role"];
+  avatar: string;
+  created_at: unknown;
+};
+
+type CompanyRow = {
+  id: string;
+  name: string;
+  owner_id: string;
+  member_ids: unknown;
+  created_at: unknown;
+};
+
+function fromSubcontractorRow(row: SubcontractorRow): Subcontractor {
+  return {
+    id: row.id,
+    companyName: row.company_name,
+    representativeName: row.representative_name,
+    phone: row.phone,
+    email: row.email,
+    workersComp: row.workers_comp,
+    w9: row.w9,
+    businessLicense: row.business_license,
+    createdAt: dbString(row.created_at),
+    updatedAt: dbString(row.updated_at),
+  };
+}
+
+function fromUserRow(row: UserRow): User {
+  return {
+    id: row.id,
+    tag: row.tag,
+    username: row.username,
+    password: row.password,
+    pin: row.pin,
+    role: row.role,
+    avatar: row.avatar,
+    createdAt: dbString(row.created_at),
+  };
+}
+
+function fromCompanyRow(row: CompanyRow): Company {
+  return {
+    id: row.id,
+    name: row.name,
+    ownerId: row.owner_id,
+    memberIds: parseJsonColumn<string[]>(row.member_ids),
+    createdAt: dbString(row.created_at),
   };
 }
 
@@ -196,13 +289,75 @@ class JsonFileRepository implements ProjectRepository {
   }
 }
 
+class PostgresProjectRepository implements ProjectRepository {
+  private rowToProject(row: ProjectRow): Project {
+    return normalizeProject(parseJsonColumn<Project>(row.data));
+  }
+
+  async list(): Promise<ProjectSummary[]> {
+    const rows = (await sql()`select data from projects order by updated_at desc`) as ProjectRow[];
+    return rows.map((row) => toSummary(this.rowToProject(row)));
+  }
+
+  async all(): Promise<Project[]> {
+    const rows = (await sql()`select data from projects order by data->>'createdAt' asc`) as ProjectRow[];
+    return rows.map((row) => this.rowToProject(row));
+  }
+
+  async get(id: string): Promise<Project | null> {
+    const rows = (await sql()`select data from projects where id = ${id}`) as ProjectRow[];
+    return rows[0] ? this.rowToProject(rows[0]) : null;
+  }
+
+  async create(input: ProjectInput): Promise<Project> {
+    const project: Project = {
+      ...input,
+      id: newId(),
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+    await sql()`insert into projects (id, company_id, member_ids, updated_at, data)
+      values (
+        ${project.id},
+        ${project.companyId ?? ""},
+        ${jsonColumn(project.memberIds ?? [])}::jsonb,
+        ${project.updatedAt},
+        ${jsonColumn(project)}::jsonb
+      )`;
+    return project;
+  }
+
+  async update(id: string, input: ProjectInput): Promise<Project | null> {
+    const existing = await this.get(id);
+    if (!existing) return null;
+    const updated: Project = {
+      ...input,
+      id,
+      createdAt: existing.createdAt,
+      updatedAt: nowIso(),
+    };
+    await sql()`update projects
+      set company_id = ${updated.companyId ?? ""},
+          member_ids = ${jsonColumn(updated.memberIds ?? [])}::jsonb,
+          updated_at = ${updated.updatedAt},
+          data = ${jsonColumn(updated)}::jsonb
+      where id = ${id}`;
+    return updated;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const rows = (await sql()`delete from projects where id = ${id} returning id`) as { id: string }[];
+    return rows.length > 0;
+  }
+}
+
 // Single shared instance. To switch to Postgres later, branch on
 // process.env.STORAGE_DRIVER here and return a PostgresRepository instead.
 let repo: ProjectRepository | null = null;
 
 export function getRepository(): ProjectRepository {
   if (!repo) {
-    repo = new JsonFileRepository();
+    repo = isPostgres() ? new PostgresProjectRepository() : new JsonFileRepository();
   }
   return repo;
 }
@@ -243,7 +398,7 @@ export interface SubcontractorRepository {
  * project state (feature #2: "related jobs with active statuses").
  */
 async function relatedJobsBySubcontractor(): Promise<Map<string, RelatedJob[]>> {
-  const list = await readJsonArray<Project>(DATA_FILE);
+  const list = await getRepository().all();
   const map = new Map<string, RelatedJob[]>();
   for (const p of list) {
     for (const job of p.jobs ?? []) {
@@ -317,9 +472,85 @@ class JsonSubcontractorRepository implements SubcontractorRepository {
   }
 }
 
+class PostgresSubcontractorRepository implements SubcontractorRepository {
+  private async read(): Promise<Subcontractor[]> {
+    const rows = (await sql()`select * from subcontractors`) as SubcontractorRow[];
+    return rows.map(fromSubcontractorRow);
+  }
+
+  async list(): Promise<SubcontractorWithJobs[]> {
+    const [rows, related] = await Promise.all([this.read(), relatedJobsBySubcontractor()]);
+    return rows
+      .map((s) => ({ ...s, relatedJobs: related.get(s.id) ?? [] }))
+      .sort((a, b) => a.companyName.localeCompare(b.companyName));
+  }
+
+  async get(id: string): Promise<Subcontractor | null> {
+    const rows = (await sql()`select * from subcontractors where id = ${id}`) as SubcontractorRow[];
+    return rows[0] ? fromSubcontractorRow(rows[0]) : null;
+  }
+
+  async create(input: SubcontractorInput): Promise<Subcontractor> {
+    const now = nowIso();
+    const sub: Subcontractor = { ...input, id: newId(), createdAt: now, updatedAt: now };
+    await sql()`insert into subcontractors (
+        id,
+        company_name,
+        representative_name,
+        phone,
+        email,
+        workers_comp,
+        w9,
+        business_license,
+        created_at,
+        updated_at
+      )
+      values (
+        ${sub.id},
+        ${sub.companyName},
+        ${sub.representativeName},
+        ${sub.phone},
+        ${sub.email},
+        ${sub.workersComp},
+        ${sub.w9},
+        ${sub.businessLicense},
+        ${sub.createdAt},
+        ${sub.updatedAt}
+      )`;
+    return sub;
+  }
+
+  async update(id: string, input: SubcontractorInput): Promise<Subcontractor | null> {
+    const existing = await this.get(id);
+    if (!existing) return null;
+    const updated: Subcontractor = {
+      ...input,
+      id,
+      createdAt: existing.createdAt,
+      updatedAt: nowIso(),
+    };
+    await sql()`update subcontractors
+      set company_name = ${updated.companyName},
+          representative_name = ${updated.representativeName},
+          phone = ${updated.phone},
+          email = ${updated.email},
+          workers_comp = ${updated.workersComp},
+          w9 = ${updated.w9},
+          business_license = ${updated.businessLicense},
+          updated_at = ${updated.updatedAt}
+      where id = ${id}`;
+    return updated;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const rows = (await sql()`delete from subcontractors where id = ${id} returning id`) as { id: string }[];
+    return rows.length > 0;
+  }
+}
+
 let subRepo: SubcontractorRepository | null = null;
 export function getSubcontractorRepository(): SubcontractorRepository {
-  if (!subRepo) subRepo = new JsonSubcontractorRepository();
+  if (!subRepo) subRepo = isPostgres() ? new PostgresSubcontractorRepository() : new JsonSubcontractorRepository();
   return subRepo;
 }
 
@@ -328,6 +559,21 @@ export function getSubcontractorRepository(): SubcontractorRepository {
 export interface JobCategoryRepository {
   get(): Promise<string[]>;
   replace(categories: string[]): Promise<string[]>;
+}
+
+function cleanJobCategories(categories: string[]): string[] {
+  // De-dupe (case-insensitive), drop blanks, preserve order.
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const c of categories) {
+    const t = c.trim();
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    clean.push(t);
+  }
+  return clean;
 }
 
 class JsonJobCategoryRepository implements JobCategoryRepository {
@@ -348,25 +594,35 @@ class JsonJobCategoryRepository implements JobCategoryRepository {
   }
 
   async replace(categories: string[]): Promise<string[]> {
-    // De-dupe (case-insensitive), drop blanks, preserve order.
-    const seen = new Set<string>();
-    const clean: string[] = [];
-    for (const c of categories) {
-      const t = c.trim();
-      if (!t) continue;
-      const key = t.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      clean.push(t);
-    }
+    const clean = cleanJobCategories(categories);
     await writeJsonAtomic(JOB_CATEGORIES_FILE, clean);
+    return clean;
+  }
+}
+
+class PostgresJobCategoryRepository implements JobCategoryRepository {
+  async get(): Promise<string[]> {
+    const rows = (await sql()`select categories from job_categories where id = 1`) as JobCategoriesRow[];
+    if (rows[0]) return parseJsonColumn<string[]>(rows[0].categories);
+
+    await sql()`insert into job_categories (id, categories)
+      values (1, ${jsonColumn(DEFAULT_JOB_CATEGORIES)}::jsonb)
+      on conflict (id) do update set categories = excluded.categories`;
+    return [...DEFAULT_JOB_CATEGORIES];
+  }
+
+  async replace(categories: string[]): Promise<string[]> {
+    const clean = cleanJobCategories(categories);
+    await sql()`insert into job_categories (id, categories)
+      values (1, ${jsonColumn(clean)}::jsonb)
+      on conflict (id) do update set categories = excluded.categories`;
     return clean;
   }
 }
 
 let catRepo: JobCategoryRepository | null = null;
 export function getJobCategoryRepository(): JobCategoryRepository {
-  if (!catRepo) catRepo = new JsonJobCategoryRepository();
+  if (!catRepo) catRepo = isPostgres() ? new PostgresJobCategoryRepository() : new JsonJobCategoryRepository();
   return catRepo;
 }
 
@@ -421,9 +677,62 @@ class JsonUserRepository implements UserRepository {
   }
 }
 
+class PostgresUserRepository implements UserRepository {
+  async list(): Promise<User[]> {
+    const rows = (await sql()`select * from users order by created_at asc`) as UserRow[];
+    return rows.map(fromUserRow);
+  }
+
+  async getById(id: string): Promise<User | null> {
+    const rows = (await sql()`select * from users where id = ${id}`) as UserRow[];
+    return rows[0] ? fromUserRow(rows[0]) : null;
+  }
+
+  async getByTag(tag: string): Promise<User | null> {
+    const rows = (await sql()`select * from users where lower(tag) = lower(${tag})`) as UserRow[];
+    return rows[0] ? fromUserRow(rows[0]) : null;
+  }
+
+  async getByUsername(username: string): Promise<User | null> {
+    const rows = (await sql()`select * from users where lower(username) = lower(${username})`) as UserRow[];
+    return rows[0] ? fromUserRow(rows[0]) : null;
+  }
+
+  async create(input: Omit<User, "id" | "createdAt">): Promise<User> {
+    const user: User = { ...input, id: newId(), createdAt: nowIso() };
+    await sql()`insert into users (id, tag, username, password, pin, role, avatar, created_at)
+      values (
+        ${user.id},
+        ${user.tag},
+        ${user.username},
+        ${user.password},
+        ${user.pin},
+        ${user.role},
+        ${user.avatar},
+        ${user.createdAt}
+      )`;
+    return user;
+  }
+
+  async update(id: string, patch: Partial<User>): Promise<User | null> {
+    const existing = await this.getById(id);
+    if (!existing) return null;
+    const updated: User = { ...existing, ...patch, id, createdAt: existing.createdAt };
+    await sql()`update users
+      set tag = ${updated.tag},
+          username = ${updated.username},
+          password = ${updated.password},
+          pin = ${updated.pin},
+          role = ${updated.role},
+          avatar = ${updated.avatar}
+      where id = ${id}`;
+    return updated;
+  }
+}
+
 let userRepo: UserRepository | null = null;
 export function getUserRepository(): UserRepository {
-  if (!userRepo) userRepo = new JsonUserRepository();
+  if (!userRepo) userRepo = isPostgres() ? new PostgresUserRepository() : new JsonUserRepository();
   return userRepo;
 }
 
@@ -472,9 +781,51 @@ class JsonCompanyRepository implements CompanyRepository {
   }
 }
 
+class PostgresCompanyRepository implements CompanyRepository {
+  async list(): Promise<Company[]> {
+    const rows = (await sql()`select * from companies order by created_at asc`) as CompanyRow[];
+    return rows.map(fromCompanyRow);
+  }
+
+  async getById(id: string): Promise<Company | null> {
+    const rows = (await sql()`select * from companies where id = ${id}`) as CompanyRow[];
+    return rows[0] ? fromCompanyRow(rows[0]) : null;
+  }
+
+  async create(name: string, ownerId: string): Promise<Company> {
+    const company: Company = { id: newId(), name, ownerId, memberIds: [], createdAt: nowIso() };
+    await sql()`insert into companies (id, name, owner_id, member_ids, created_at)
+      values (
+        ${company.id},
+        ${company.name},
+        ${company.ownerId},
+        ${jsonColumn(company.memberIds)}::jsonb,
+        ${company.createdAt}
+      )`;
+    return company;
+  }
+
+  async update(id: string, patch: Partial<Company>): Promise<Company | null> {
+    const existing = await this.getById(id);
+    if (!existing) return null;
+    const updated: Company = { ...existing, ...patch, id, createdAt: existing.createdAt };
+    await sql()`update companies
+      set name = ${updated.name},
+          owner_id = ${updated.ownerId},
+          member_ids = ${jsonColumn(updated.memberIds)}::jsonb
+      where id = ${id}`;
+    return updated;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const rows = (await sql()`delete from companies where id = ${id} returning id`) as { id: string }[];
+    return rows.length > 0;
+  }
+}
+
 let companyRepo: CompanyRepository | null = null;
 export function getCompanyRepository(): CompanyRepository {
-  if (!companyRepo) companyRepo = new JsonCompanyRepository();
+  if (!companyRepo) companyRepo = isPostgres() ? new PostgresCompanyRepository() : new JsonCompanyRepository();
   return companyRepo;
 }
 
@@ -511,9 +862,10 @@ async function doSeed(): Promise<void> {
   }
 
   // Migrate legacy projects with no company into the god's HQ company.
-  const raw = await readJsonArray<Project>(DATA_FILE);
-  let changed = false;
+  const projects = getRepository();
+  const raw = await projects.all();
   for (const p of raw) {
+    let changed = false;
     if (!p.companyId) {
       p.companyId = home.id;
       changed = true;
@@ -522,6 +874,6 @@ async function doSeed(): Promise<void> {
       p.memberIds = [];
       changed = true;
     }
+    if (changed) await projects.update(p.id, p);
   }
-  if (changed) await writeJsonAtomic(DATA_FILE, raw);
 }

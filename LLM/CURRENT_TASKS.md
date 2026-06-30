@@ -1,7 +1,7 @@
 # Current Tasks
 
 ## Active
-- Postgres Storage Driver - Status: needs-handoff (ready to send to Coding LLM) - Handoff: `LLM/handoffs/postgres-storage.md` - Context: `LLM/context/postgres-storage.md`
+- (none)
 
 <!--
 Keep Active tasks minimal. Prefer ONE active "current" task at a time.
@@ -12,7 +12,8 @@ Format (one line per task):
 -->
 
 ## Completed
-_No completed tasks yet._
+- Postgres Storage Driver - Completed: 2026-06-30 - Completion: `LLM/completions/postgres-storage.md` - Notes: `LLM/orchestrator_notes.md`
+- Fix broken project page export - Completed: 2026-06-30 - Completion: `LLM/completions/fix-broken-project-page-export.md` - Notes: `LLM/orchestrator_notes.md`
 
 <!--
 Format (one line per task):

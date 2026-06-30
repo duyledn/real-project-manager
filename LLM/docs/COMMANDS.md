@@ -7,10 +7,10 @@ Updated by the Orchestrator after each audit.
 Use this format per feature section:
 -->
 
-## [Feature Name]
-**Handled in:** `path/to/entry-point` → `path/to/module`
-**Permissions:** [Who can use it]
+## Postgres storage migration (one-time, manual)
+**Handled in:** `scripts/migrate-to-postgres.ts`
+**Permissions:** Run locally by the project owner, not exposed to end users.
 
-### [Command/Endpoint Name]
-**Syntax:** `[exact usage]`
-**Behaviour:** [What it does, edge cases, error states]
+### `npm run migrate:postgres`
+**Syntax:** `DATABASE_URL=<neon-pooled-connection-string> npm run migrate:postgres`
+**Behaviour:** Idempotent one-time copy of `data/*.json` into the Postgres tables defined in `scripts/schema.sql` (apply the schema first). Safe to re-run — upserts by id. Skips any table whose JSON file doesn't exist, with a log line. Run this once after setting `DATABASE_URL`/`STORAGE_DRIVER=postgres`, before relying on the app in production.
