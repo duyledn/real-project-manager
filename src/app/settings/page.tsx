@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sun, Moon, Clock, Palette, UserRound, Upload, Trash2 } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Clock, Palette, UserRound, Upload, Trash2, Languages } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/lib/theme";
+import { useI18n, type Lang } from "@/lib/i18n";
 import { profileInitials } from "@/lib/useWorkspaceProfile";
 import { useSession } from "@/lib/session-context";
 
@@ -37,6 +38,7 @@ function fileToAvatarDataUrl(file: File, max = 256): Promise<string> {
 
 export default function WorkspaceSettingsPage() {
   const { mode, setMode } = useTheme();
+  const { lang, setLang, t } = useI18n();
   const { user, refresh } = useSession();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -45,6 +47,11 @@ export default function WorkspaceSettingsPage() {
     { key: "light", label: "Light", icon: Sun, hint: "Always the warm daytime palette." },
     { key: "dark", label: "Dark", icon: Moon, hint: "Always the dark estate palette." },
     { key: "auto", label: "Auto", icon: Clock, hint: "Light by day, dark after 6 PM." },
+  ];
+
+  const langOptions: { key: Lang; label: string; flag: string; hint: string }[] = [
+    { key: "en", label: "English", flag: "🇺🇸", hint: "Interface in English." },
+    { key: "vi", label: "Vietnamese", flag: "🇻🇳", hint: "Giao diện bằng tiếng Việt." },
   ];
 
   async function saveAvatar(avatar: string) {
@@ -74,22 +81,23 @@ export default function WorkspaceSettingsPage() {
     <main className="max-w-3xl mx-auto px-5 py-8">
       <div className="mb-5">
         <Link href="/" className="btn gap-1.5">
-          <ArrowLeft size={14} /> All projects
+          <ArrowLeft size={14} /> {t("All projects")}
         </Link>
       </div>
 
       <header className="mb-6">
-        <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent mb-1">Workspace</div>
-        <h1 className="font-display font-extrabold text-3xl leading-none">Settings</h1>
+        <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent mb-1">{t("Workspace")}</div>
+        <h1 className="font-display font-extrabold text-3xl leading-none">{t("Settings")}</h1>
         <p className="text-ink-muted text-sm mt-2">
-          Preferences for your whole workspace and profile. Per-project options live under each project&rsquo;s
-          settings.
+          {t(
+            "Preferences for your whole workspace and profile. Per-project options live under each project’s settings.",
+          )}
         </p>
       </header>
 
       <div className="space-y-7">
         {/* Appearance */}
-        <SettingsCard icon={Palette} title="Appearance" caption="Applies across every project. Choose a fixed theme or follow the time of day.">
+        <SettingsCard icon={Palette} title={t("Appearance")} caption={t("Applies across every project. Choose a fixed theme or follow the time of day.")}>
           <div className="grid grid-cols-3 gap-2.5">
             {modeOptions.map((opt) => {
               const Icon = opt.icon;
@@ -104,8 +112,31 @@ export default function WorkspaceSettingsPage() {
                     : { background: "var(--glass-2)", border: "1px solid var(--border)" }}
                 >
                   <Icon size={20} className={active ? "text-accent" : "text-ink-muted"} />
-                  <span className="text-[13px] font-bold">{opt.label}</span>
-                  <span className="text-[11px] text-ink-muted leading-tight">{opt.hint}</span>
+                  <span className="text-[13px] font-bold">{t(opt.label)}</span>
+                  <span className="text-[11px] text-ink-muted leading-tight">{t(opt.hint)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </SettingsCard>
+
+        {/* Language */}
+        <SettingsCard icon={Languages} title={t("Language")} caption={t("Choose the interface language. Your data, figures, and currency stay exactly as entered.")}>
+          <div className="grid grid-cols-2 gap-2.5">
+            {langOptions.map((opt) => {
+              const active = lang === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setLang(opt.key)}
+                  className="flex flex-col items-start gap-2 p-3.5 rounded-[14px] text-left transition-all"
+                  style={active
+                    ? { background: "var(--accent-soft)", border: "1px solid var(--accent)" }
+                    : { background: "var(--glass-2)", border: "1px solid var(--border)" }}
+                >
+                  <span className="text-[20px] leading-none">{opt.flag}</span>
+                  <span className="text-[13px] font-bold">{t(opt.label)}</span>
+                  <span className="text-[11px] text-ink-muted leading-tight">{t(opt.hint)}</span>
                 </button>
               );
             })}
@@ -113,7 +144,8 @@ export default function WorkspaceSettingsPage() {
         </SettingsCard>
 
         {/* Profile */}
-        <SettingsCard icon={UserRound} title="Profile" caption="Your @tag and avatar, shown in the top-right of the nav bar.">
+        <SettingsCard icon={UserRound} title={t("Profile")} caption={t("Your @tag and avatar, shown in the top-right of the nav bar.")}>
+
           <div className="flex items-center gap-4 flex-wrap">
             {user?.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -125,20 +157,20 @@ export default function WorkspaceSettingsPage() {
             )}
             <div className="flex-1 min-w-[200px]">
               <div className="mb-3">
-                <div className="label-mono mb-1">Handle</div>
+                <div className="label-mono mb-1">{t("Handle")}</div>
                 <div className="font-extrabold text-lg">@{user?.tag ?? "—"}</div>
                 <div className="text-[11.5px] text-ink-muted">
-                  {user?.role === "god" ? "Administrator" : user?.username}
+                  {user?.role === "god" ? t("Administrator") : user?.username}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickAvatar} className="hidden" />
                 <button onClick={() => fileRef.current?.click()} disabled={busy} className="btn gap-1.5">
-                  <Upload size={15} /> {busy ? "Processing…" : user?.avatar ? "Replace photo" : "Upload photo"}
+                  <Upload size={15} /> {busy ? t("Processing…") : user?.avatar ? t("Replace photo") : t("Upload photo")}
                 </button>
                 {user?.avatar && (
                   <button onClick={() => void saveAvatar("")} className="btn btn-ghost gap-1.5">
-                    <Trash2 size={14} /> Remove
+                    <Trash2 size={14} /> {t("Remove")}
                   </button>
                 )}
               </div>

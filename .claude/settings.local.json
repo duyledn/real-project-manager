@@ -12,7 +12,15 @@
       "Bash(npx tsc *)",
       "Bash(npx next *)",
       "Bash(node -e \"const d=require\\('./data/projects.json'\\); const p=d[0]; console.log\\('investmentStrategy:', JSON.stringify\\(p.investmentStrategy\\)\\); console.log\\('profileImage:', JSON.stringify\\(p.profileImage\\)\\); console.log\\('bidders cleared:', p.jobs.every\\(j=>j.bidders.length===0\\)\\);\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([{ 'tag':u.get\\('tag'\\),'username':u.get\\('username'\\),'role':u.get\\('role'\\)} for u in \\(d if isinstance\\(d,list\\) else d.get\\('users',d\\)\\)]\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('data/projects.json'\\)\\); ps=d if isinstance\\(d,list\\) else d.get\\('projects',[]\\); [print\\(p['id'],p['name'],sum\\(1 for j in p.get\\('jobs',[]\\) for b in j.get\\('bidders',[]\\) if b.get\\('status'\\)=='Bid received'\\)\\) for p in ps]\")",
+      "Bash(grep -iE '\\\\.\\(png|jpg|jpeg|svg|gif|webp\\)$')",
+      "Bash(mkdir -p public)",
+      "Bash(cp \"C:/Users/lehoa/Downloads/Real Project Manager.png\" public/logo.png)",
+      "Bash(cp \"C:/Users/lehoa/Downloads/Real Project Manager.png\" src/app/icon.png)",
+      "Bash(rm -f src/app/icon.svg)",
+      "Bash(cd \"C:/Users/lehoa/OneDrive/Documents/Work/real-project-manager\" && rm -rf \"src/app/projects/[id]/inputs\" && echo \"removed inputs dir\")"
     ]
   }
 }

@@ -188,6 +188,24 @@ export interface Job {
   bidders: Bidder[];
 }
 
+/** A node in a project's Files workspace — a folder or an uploaded file.
+ *  Stored flat with `parentId` links (null = project root); file contents are
+ *  kept as a data URL so everything persists inside the project JSON. */
+export interface ProjectFile {
+  id: string;
+  name: string;
+  kind: "folder" | "file";
+  /** Containing folder id, or null at the root. */
+  parentId: string | null;
+  /** data URL of the contents (files only; "" for folders). */
+  dataUrl: string;
+  /** MIME type (files only). */
+  mime: string;
+  /** Size in bytes (files only). */
+  size: number;
+  createdAt: string;
+}
+
 /** A subcontractor in the global, cross-project database. */
 export interface Subcontractor {
   id: string;
@@ -295,6 +313,9 @@ export interface Project {
    * the resulting job never re-imports it.
    */
   importedItemIds: string[];
+
+  /** Files workspace — folders + uploaded documents for this project. */
+  files: ProjectFile[];
 }
 
 /** Payload shape accepted by the create/update API — everything except the

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, X, Settings2, Maximize2, Minimize2 } from "lucide-react";
+import { Plus, X, Settings2 } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { useJobCategories } from "@/lib/useJobCategories";
 import { useSubcontractors } from "@/lib/useSubcontractors";
@@ -15,7 +15,6 @@ import { useDragReorder, moveItem } from "@/lib/useDragReorder";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { ResizableTh } from "@/components/ResizableTh";
 import { JobDrawer } from "@/components/JobDrawer";
-import { JobTimeline } from "@/components/JobTimeline";
 import { JobsBidsBoard } from "@/components/JobsBidsBoard";
 
 export default function ManagePage() {
@@ -27,7 +26,6 @@ export default function ManagePage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCat, setNewCat] = useState("");
-  const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [deepLinkJob, setDeepLinkJob] = useState<string | null>(null);
 
   // Deep-link from the Dashboard's "Review" action: ?job=<id> selects that job
@@ -122,12 +120,8 @@ export default function ManagePage() {
 
   return (
     <div className="space-y-10">
-      {/* Title + save */}
-      <div className="panel p-5 flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <div className="label-mono mb-1">Jobs & Bids</div>
-          <h1 className="font-display font-extrabold text-3xl leading-none">{project.name}</h1>
-        </div>
+      {/* Save status (the project name now lives in the shell header) */}
+      <div className="flex justify-end">
         <SaveIndicator state={saveState} />
       </div>
 
@@ -143,20 +137,10 @@ export default function ManagePage() {
         </div>
       </section>
 
-      {/* 02 — Email identity */}
-      <section>
-        <SectionHeader num="02" title="Bid Email Identity" caption="Used to auto-fill bid-request emails sent from each job's bidder rows." />
-        <div className="panel p-5 grid sm:grid-cols-3 gap-5">
-          <TextField label="Your Company Name" value={project.companyName} onChange={(v) => patch((p) => ({ ...p, companyName: v }))} placeholder="123 Construction" />
-          <TextField label="Your Name (sender)" value={project.senderName} onChange={(v) => patch((p) => ({ ...p, senderName: v }))} placeholder="Duy" />
-          <TextField label="Plans Link" value={project.plansLink} onChange={(v) => patch((p) => ({ ...p, plansLink: v }))} placeholder="https://drive.google.com/…" hint="Included in the email so bidders can access the plans." />
-        </div>
-      </section>
-
-      {/* 03 — Jobs table */}
+      {/* 02 — Jobs table */}
       <section>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-          <SectionHeader num="03" title="Jobs" caption="Each construction scope. Click a row to manage its bids." />
+          <SectionHeader num="02" title="Jobs" caption="Each construction scope. Click a row to manage its bids." />
           <button onClick={() => setShowCatManager((s) => !s)} className="btn inline-flex items-center gap-1.5 shrink-0">
             <Settings2 size={14} /> Manage categories
           </button>
@@ -319,9 +303,9 @@ export default function ManagePage() {
         </button>
       </section>
 
-      {/* 04 — Bids board (Kanban / Spreadsheet) */}
+      {/* 03 — Bids board (Kanban / Spreadsheet) */}
       <section>
-        <SectionHeader num="04" title="Bids" caption="Track every bid as a Kanban board (drag to change status) or an Excel-style spreadsheet across all jobs." />
+        <SectionHeader num="03" title="Bids" caption="Track every bid as a Kanban board (drag to change status) or an Excel-style spreadsheet across all jobs." />
         <JobsBidsBoard
           project={project}
           setProject={setProject}
@@ -331,68 +315,15 @@ export default function ManagePage() {
         />
       </section>
 
-      {/* 05 — Timeline */}
-      {project.jobs.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <SectionHeader num="05" title="Timeline" caption="Each job positioned by its start and (optional) end date. Click a bar to configure the job." />
-            <button onClick={() => setTimelineExpanded(true)} className="btn inline-flex items-center gap-1.5 shrink-0">
-              <Maximize2 size={14} /> Expand
-            </button>
-          </div>
-          <JobTimeline
-            jobs={project.jobs}
-            selectedJobId={selectedJobId}
-            onSelect={setSelectedJobId}
-            onAddJob={addJob}
-            onColorChange={(jobId, color) => updateJob(jobId, (j) => ({ ...j, color }))}
-          />
-        </section>
-      )}
-
-      {/* Expanded timeline — 3/4 of the screen */}
-      {timelineExpanded && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(20,12,8,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-          onClick={() => setTimelineExpanded(false)}
-        >
-          <div
-            className="flex flex-col overflow-hidden"
-            style={{
-              width: "75vw",
-              height: "75vh",
-              borderRadius: 24,
-              background: "var(--glass-strong)",
-              backdropFilter: "var(--blur)",
-              WebkitBackdropFilter: "var(--blur)",
-              border: "1px solid var(--border)",
-              borderTopColor: "var(--border-top)",
-              boxShadow: "var(--shadow-lg)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <div className="label-mono">Schedule · Timeline</div>
-                <h2 className="font-display font-extrabold text-xl leading-none mt-0.5">{project.name}</h2>
-              </div>
-              <button onClick={() => setTimelineExpanded(false)} className="btn inline-flex items-center gap-1.5">
-                <Minimize2 size={14} /> Close
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-5">
-              <JobTimeline
-                jobs={project.jobs}
-                selectedJobId={selectedJobId}
-                onSelect={setSelectedJobId}
-                onAddJob={addJob}
-                onColorChange={(jobId, color) => updateJob(jobId, (j) => ({ ...j, color }))}
-              />
-            </div>
-          </div>
+      {/* 04 — Bid email identity (kept last: it configures outgoing bid-request emails) */}
+      <section>
+        <SectionHeader num="04" title="Bid Email Identity" caption="Used to auto-fill bid-request emails sent from each job's bidder rows." />
+        <div className="panel p-5 grid sm:grid-cols-3 gap-5">
+          <TextField label="Your Company Name" value={project.companyName} onChange={(v) => patch((p) => ({ ...p, companyName: v }))} placeholder="123 Construction" />
+          <TextField label="Your Name (sender)" value={project.senderName} onChange={(v) => patch((p) => ({ ...p, senderName: v }))} placeholder="Duy" />
+          <TextField label="Plans Link" value={project.plansLink} onChange={(v) => patch((p) => ({ ...p, plansLink: v }))} placeholder="https://drive.google.com/…" hint="Included in the email so bidders can access the plans." />
         </div>
-      )}
+      </section>
 
       {/* Drawer (mini-tab) */}
       {selectedJob && (

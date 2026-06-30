@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CurrencyProvider } from "@/lib/currency";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
+import { LanguageProvider } from "@/lib/i18n";
 import { SessionProvider } from "@/lib/session-context";
 import { Background } from "@/components/Background";
 import { AppShell } from "@/components/AppShell";
@@ -25,14 +26,16 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen">
         <ThemeProvider>
-          <CurrencyProvider>
-            <SessionProvider>
-              <Background />
-              <div className="relative z-10">
-                <AppShell>{children}</AppShell>
-              </div>
-            </SessionProvider>
-          </CurrencyProvider>
+          <LanguageProvider>
+            <CurrencyProvider>
+              <SessionProvider>
+                <Background />
+                <div className="relative z-10">
+                  <AppShell>{children}</AppShell>
+                </div>
+              </SessionProvider>
+            </CurrencyProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

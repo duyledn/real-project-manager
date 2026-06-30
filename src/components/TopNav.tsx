@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Building2, ChevronDown, Settings, FolderOpen, Shield, LogOut } from "lucide-react";
+import { ChevronDown, Settings, FolderOpen, Shield, LogOut } from "lucide-react";
 import type { ProjectSummary } from "@/lib/types";
+import { Logo } from "@/components/Logo";
 import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
 import { profileInitials } from "@/lib/useWorkspaceProfile";
 import { prefetchProject } from "@/lib/useProject";
 
@@ -21,6 +23,7 @@ const menuPanel: React.CSSProperties = {
 /** Global top navigation bar: brand (→ landing) on the left; Projects menu,
  *  workspace Settings, and the user menu on the right. */
 export function TopNav() {
+  const { t } = useI18n();
   return (
     <div className="no-print sticky top-0 z-[100] px-4 sm:px-6 pt-3">
       <nav
@@ -28,12 +31,7 @@ export function TopNav() {
         style={{ background: "var(--glass-strong)" }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0 group" title="Back to all projects">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-            style={{ background: "linear-gradient(150deg,var(--accent),var(--accent-2))", boxShadow: "0 6px 16px var(--accent-soft)" }}
-          >
-            <Building2 size={20} className="text-white" />
-          </div>
+          <Logo size={30} className="text-accent shrink-0 transition-transform group-hover:scale-105" />
           <div className="font-extrabold text-[14.5px] tracking-tight whitespace-nowrap hidden sm:block">
             Real Project Manager
           </div>
@@ -41,7 +39,7 @@ export function TopNav() {
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           <ProjectsMenu />
-          <Link href="/settings" title="Workspace & profile settings" aria-label="Workspace settings" className="icon-btn">
+          <Link href="/settings" title={t("Workspace & profile settings")} aria-label={t("Workspace settings")} className="icon-btn">
             <Settings size={16} />
           </Link>
           <UserMenu />
@@ -53,6 +51,7 @@ export function TopNav() {
 
 function UserMenu() {
   const { user, logout } = useSession();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -85,20 +84,20 @@ function UserMenu() {
           <div className="px-2.5 py-2 mb-1">
             <div className="text-[13px] font-extrabold">@{user.tag}</div>
             <div className="text-[11px] text-ink-muted">
-              {user.role === "god" ? "Admin · full control" : user.username}
+              {user.role === "god" ? t("Admin · full control") : user.username}
             </div>
           </div>
           <div className="h-px mb-1 mx-1" style={{ background: "var(--border)" }} />
           {user.role === "god" && (
             <Link href="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[13px] font-semibold transition-colors hover:bg-[var(--accent-soft)]">
-              <Shield size={15} className="text-accent" /> Admin console
+              <Shield size={15} className="text-accent" /> {t("Admin console")}
             </Link>
           )}
           <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[13px] font-semibold transition-colors hover:bg-[var(--accent-soft)]">
-            <Settings size={15} /> Settings
+            <Settings size={15} /> {t("Settings")}
           </Link>
           <button onClick={() => void logout()} className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[13px] font-semibold text-red transition-colors hover:bg-[var(--accent-soft)]">
-            <LogOut size={15} /> Sign out
+            <LogOut size={15} /> {t("Sign out")}
           </button>
         </div>
       )}
@@ -107,6 +106,7 @@ function UserMenu() {
 }
 
 function ProjectsMenu() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -148,18 +148,18 @@ function ProjectsMenu() {
     <div ref={wrapRef} className="relative" onMouseEnter={openMenu} onMouseLeave={scheduleClose}>
       <button onClick={() => (open ? setOpen(false) : openMenu())} className="btn gap-1.5" aria-haspopup="menu" aria-expanded={open}>
         <FolderOpen size={15} className="text-accent" />
-        <span className="hidden sm:inline">Projects</span>
+        <span className="hidden sm:inline">{t("Projects")}</span>
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div className="absolute right-0 mt-2 w-[260px] p-2 z-[120]" style={menuPanel}>
-          <div className="label-mono px-2 py-1.5">Your projects</div>
+          <div className="label-mono px-2 py-1.5">{t("Your projects")}</div>
           <div className="max-h-[320px] overflow-auto flex flex-col gap-0.5">
             {!loaded ? (
-              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">Loading…</div>
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">{t("Loading…")}</div>
             ) : projects.length === 0 ? (
-              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">No projects yet.</div>
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">{t("No projects yet.")}</div>
             ) : (
               projects.map((p) => (
                 <Link
@@ -171,14 +171,14 @@ function ProjectsMenu() {
                   className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-[11px] text-[13px] font-semibold transition-colors hover:bg-[var(--accent-soft)]"
                 >
                   <span className="truncate">{p.name}</span>
-                  <span className="text-[10.5px] text-faint font-medium shrink-0">{p.holdYears}-yr</span>
+                  <span className="text-[10.5px] text-faint font-medium shrink-0">{t("{years}-yr", { years: p.holdYears })}</span>
                 </Link>
               ))
             )}
           </div>
           <div className="h-px my-1.5 mx-1" style={{ background: "var(--border)" }} />
           <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[12.5px] font-bold text-accent transition-colors hover:bg-[var(--accent-soft)]">
-            <FolderOpen size={14} /> View all projects
+            <FolderOpen size={14} /> {t("View all projects")}
           </Link>
         </div>
       )}

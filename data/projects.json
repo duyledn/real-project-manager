@@ -2,6 +2,8 @@
   {
     "name": "Ru Homestay",
     "currency": "USD",
+    "companyId": "cc30ccb2-04fa-40d2-96ce-6292e443b7aa",
+    "memberIds": [],
     "investmentStrategy": "Buy-Rehab-Hold Rental",
     "profileImage": "",
     "startDate": "2026-06-27",
@@ -202,11 +204,10 @@
       "77947c5e-4fd4-418e-bc90-756c5a33ab1d",
       "0d9f685c-b25b-42e3-9290-967c3d40beb7"
     ],
-    "companyId": "cc30ccb2-04fa-40d2-96ce-6292e443b7aa",
-    "memberIds": [],
+    "files": [],
     "id": "648177ec-1956-45c6-b39e-7af8e99aa839",
     "createdAt": "2026-06-27T04:52:56.020Z",
-    "updatedAt": "2026-06-27T11:21:50.454Z"
+    "updatedAt": "2026-06-30T04:34:53.663Z"
   },
   {
     "name": "Untitled Remodel",

@@ -17,6 +17,7 @@ import {
 import { useProjectContext } from "@/lib/projectContext";
 import { useSubcontractors } from "@/lib/useSubcontractors";
 import { useCurrency } from "@/lib/currency";
+import { useI18n } from "@/lib/i18n";
 import { approvedBidder } from "@/lib/jobs";
 import { pillStyle, BID_STATUS_SHORT, subCompliance, initialsOf } from "@/lib/bidStatus";
 import { SaveIndicator } from "@/components/fields";
@@ -35,9 +36,10 @@ export default function DashboardPage() {
   const { project, setProject, loading, error, saveState } = useProjectContext();
   const { subs } = useSubcontractors();
   const { fmtMoney } = useCurrency();
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
 
-  if (loading) return <div className="text-ink-muted text-sm">Loading…</div>;
+  if (loading) return <div className="text-ink-muted text-sm">{t("Loading…")}</div>;
   if (error) return <div className="panel border-red text-red p-4 text-sm">{error}</div>;
   if (!project) return null;
 
@@ -74,10 +76,10 @@ export default function DashboardPage() {
     .filter((x) => x.sub && !x.comp.ok);
 
   const metrics = [
-    { icon: Wallet, value: fmtMoney(estBudget), label: "Estimated budget", note: `${project.jobs.length} jobs` },
-    { icon: Gavel, value: String(bidsInPlay), label: "Bids in play", note: `${allBidders.length} total` },
-    { icon: CheckCircle2, value: fmtMoney(awarded), label: "Awarded", note: `${awardedJobs} committed` },
-    { icon: CalendarRange, value: `${datedJobs}/${project.jobs.length || 0}`, label: "Scheduled", note: "jobs dated" },
+    { icon: Wallet, value: fmtMoney(estBudget), label: t("Total budget"), note: t("{n} jobs", { n: project.jobs.length }) },
+    { icon: Gavel, value: String(bidsInPlay), label: t("Bids in play"), note: t("{n} total", { n: allBidders.length }) },
+    { icon: CheckCircle2, value: fmtMoney(awarded), label: t("Awarded"), note: t("{a}/{b} jobs", { a: awardedJobs, b: project.jobs.length }) },
+    { icon: CalendarRange, value: `${datedJobs}/${project.jobs.length || 0}`, label: t("Scheduled"), note: t("jobs dated") },
   ];
 
   return (
@@ -107,15 +109,15 @@ export default function DashboardPage() {
               <button
                 onClick={() => setEditing(true)}
                 className="icon-btn shrink-0"
-                aria-label="Edit project name, strategy and address"
-                title="Edit project details"
+                aria-label={t("Edit project name, strategy and address")}
+                title={t("Edit project details")}
               >
                 <Pencil size={14} />
               </button>
             </div>
             <p className="text-ink-muted text-sm mt-1.5">
-              {project.investmentStrategy || "Buy-Rehab-Hold Rental"} · {project.holdYears}-yr hold ·{" "}
-              {project.projectAddress || "No address set"}
+              {project.investmentStrategy || t("Buy-Rehab-Hold Rental")} · {t("{years}-yr hold", { years: project.holdYears })} ·{" "}
+              {project.projectAddress || t("No address set")}
             </p>
           </div>
         </div>
@@ -132,10 +134,17 @@ export default function DashboardPage() {
           const Icon = m.icon;
           return (
             <div key={m.label} className="panel-2 p-4">
-              <Icon size={20} className="text-accent" />
+              <div className="flex items-center justify-between">
+                <Icon size={20} className="text-accent" />
+                <span
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
+                  style={{ color: "var(--muted)", background: "var(--glass)" }}
+                >
+                  {m.note}
+                </span>
+              </div>
               <div className="font-mono text-[22px] font-extrabold tracking-tight mt-3 truncate">{m.value}</div>
               <div className="text-xs text-ink-muted font-medium mt-0.5">{m.label}</div>
-              <div className="text-[11px] text-faint mt-0.5">{m.note}</div>
             </div>
           );
         })}
@@ -145,14 +154,14 @@ export default function DashboardPage() {
         {/* Bids needing your decision */}
         <div className="panel-2 p-[18px]">
           <div className="flex items-center justify-between mb-3.5">
-            <div className="font-extrabold text-[14.5px]">Bids needing your decision</div>
+            <div className="font-extrabold text-[14.5px]">{t("Bids needing your decision")}</div>
             <span className="pill" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>
-              {decisionBids.length} pending
+              {t("{n} pending", { n: decisionBids.length })}
             </span>
           </div>
           {decisionBids.length === 0 ? (
             <p className="text-sm text-ink-muted py-6 text-center">
-              Nothing awaiting a decision. Received bids show up here.
+              {t("Nothing awaiting a decision. Received bids show up here.")}
             </p>
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -171,17 +180,17 @@ export default function DashboardPage() {
                       {initialsOf(sub?.companyName ?? "—")}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold truncate">{sub?.companyName ?? "Unassigned"}</div>
+                      <div className="text-[13px] font-bold truncate">{sub?.companyName ?? t("Unassigned")}</div>
                       <div className="text-[11.5px] text-ink-muted">
                         {b.jobCategory} ·{" "}
                         <span className="pill !px-2 !py-0.5" style={pillStyle(b.status)}>
-                          {BID_STATUS_SHORT[b.status]}
+                          {t(BID_STATUS_SHORT[b.status])}
                         </span>
                       </div>
                     </div>
                     <div className="font-mono font-semibold text-[13.5px] whitespace-nowrap">{fmtMoney(b.bidPrice)}</div>
                     <Link href={`${base}/manage?job=${b.jobId}`} className="btn !px-3 !py-1.5 !text-[11.5px]">
-                      Review
+                      {t("Review")}
                     </Link>
                   </div>
                 );
@@ -194,9 +203,9 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-3.5">
           {/* Awarded vs budget */}
           <div className="panel-2 p-[18px]">
-            <div className="font-extrabold text-[14.5px] mb-1">Awarded vs budget</div>
+            <div className="font-extrabold text-[14.5px] mb-1">{t("Awarded vs budget")}</div>
             <div className="text-[11.5px] text-ink-muted mb-3.5">
-              {awardedJobs} of {project.jobs.length} jobs committed
+              {t("{a} of {b} jobs committed", { a: awardedJobs, b: project.jobs.length })}
             </div>
             <div className="flex items-baseline gap-2 mb-2.5">
               <div className="font-mono text-[24px] font-extrabold">{fmtMoney(awarded)}</div>
@@ -222,13 +231,13 @@ export default function DashboardPage() {
               ) : (
                 <ShieldCheck size={20} style={{ color: "var(--warn)" }} />
               )}
-              <div className="font-extrabold text-[14.5px]">Compliance alerts</div>
+              <div className="font-extrabold text-[14.5px]">{t("Compliance alerts")}</div>
             </div>
             {complianceAlerts.length === 0 ? (
               <p className="text-[12.5px] text-ink-muted">
                 {engagedSubIds.length === 0
-                  ? "No subcontractors engaged yet."
-                  : "All engaged subs have W-9, License & Workers' Comp on file."}
+                  ? t("No subcontractors engaged yet.")
+                  : t("All engaged subs have W-9, License & Workers' Comp on file.")}
               </p>
             ) : (
               <div className="flex flex-col gap-2">
@@ -237,12 +246,12 @@ export default function DashboardPage() {
                     <AlertTriangle size={16} style={{ color: "var(--neg)" }} className="shrink-0" />
                     <span className="font-semibold flex-1 truncate">{sub!.companyName}</span>
                     <span className="text-ink-muted text-[11.5px] whitespace-nowrap">
-                      Missing {comp.missing.join(", ")}
+                      {t("Missing {docs}", { docs: comp.missing.join(", ") })}
                     </span>
                   </div>
                 ))}
                 <Link href={`/subcontractors?from=${project.id}`} className="text-[12px] font-bold text-accent inline-flex items-center gap-1 mt-1">
-                  Manage subcontractors <ArrowRight size={13} />
+                  {t("Manage subcontractors")} <ArrowRight size={13} />
                 </Link>
               </div>
             )}
@@ -264,6 +273,7 @@ function EditIdentityModal({
   setProject: (updater: (p: Project) => Project) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(project.name);
   const [strategy, setStrategy] = useState(project.investmentStrategy || "Buy-Rehab-Hold Rental");
   const [address, setAddress] = useState(project.projectAddress);
@@ -301,17 +311,17 @@ function EditIdentityModal({
       >
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
           <div>
-            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">Edit project</div>
-            <div className="text-lg font-extrabold tracking-tight mt-0.5">Details</div>
+            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">{t("Edit project")}</div>
+            <div className="text-lg font-extrabold tracking-tight mt-0.5">{t("Details")}</div>
           </div>
-          <button onClick={onClose} className="icon-btn" aria-label="Close">
+          <button onClick={onClose} className="icon-btn" aria-label={t("Close")}>
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Project name</span>
+            <span className="label-mono">{t("Project name")}</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -321,7 +331,7 @@ function EditIdentityModal({
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Investment strategy</span>
+            <span className="label-mono">{t("Investment strategy")}</span>
             <input
               value={strategy}
               onChange={(e) => setStrategy(e.target.value)}
@@ -336,7 +346,7 @@ function EditIdentityModal({
             </datalist>
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Address</span>
+            <span className="label-mono">{t("Address")}</span>
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -348,9 +358,9 @@ function EditIdentityModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-          <button onClick={onClose} className="btn">Cancel</button>
+          <button onClick={onClose} className="btn">{t("Cancel")}</button>
           <button onClick={save} className="btn btn-blue gap-1.5">
-            <Check size={16} /> Save
+            <Check size={16} /> {t("Save")}
           </button>
         </div>
       </div>

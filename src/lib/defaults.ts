@@ -108,6 +108,17 @@ const jobSchema = z.object({
   bidders: z.array(bidderSchema).default([]),
 });
 
+const projectFileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  kind: z.enum(["folder", "file"]).default("file"),
+  parentId: z.string().nullable().default(null),
+  dataUrl: z.string().default(""),
+  mime: z.string().default(""),
+  size: z.number().finite().default(0),
+  createdAt: z.string().default(""),
+});
+
 /** Subcontractor records for the global database. */
 export const subcontractorInputSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -190,6 +201,7 @@ export const projectInputSchema = z.object({
   expenses: z.array(operatingExpenseSchema),
   incomes: z.array(incomeSourceSchema),
   importedItemIds: z.array(z.string()).default([]),
+  files: z.array(projectFileSchema).default([]),
 });
 
 export function makeId(): string {
@@ -266,5 +278,6 @@ export function defaultProjectInput(): ProjectInput {
       { id: makeId(), label: "Rental income", amount: 2400, frequency: "monthly" as const },
     ],
     importedItemIds: [],
+    files: [],
   };
 }

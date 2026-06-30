@@ -84,6 +84,7 @@ const proj: Project = {
   expenses: [],
   incomes: [{ id: "inc1", label: "Rent", amount: 24000, frequency: "annual" }],
   importedItemIds: [],
+  files: [],
 };
 approx("depreciableBasis", depreciableBasis(proj), 290000, 0.01);
 approx("annualDepreciation", annualDepreciation(proj), 10545.45, 0.5);

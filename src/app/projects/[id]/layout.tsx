@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   Calculator,
   LayoutGrid,
+  CalendarRange,
+  FolderOpen,
   Users,
   ChevronsUpDown,
   Settings,
@@ -15,14 +17,20 @@ import {
 import { useCurrency } from "@/lib/currency";
 import { ProjectProvider, useProjectContext } from "@/lib/projectContext";
 import { prefetchProject } from "@/lib/useProject";
+import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
+import { profileInitials } from "@/lib/useWorkspaceProfile";
 import type { ProjectSummary } from "@/lib/types";
 
 const FINANCIALS_SUBTABS = [
-  { slug: "inputs", label: "Inputs" },
+  { slug: "construction", label: "Construction Estimate" },
+  { slug: "investment", label: "Investment Estimates" },
   { slug: "analysis", label: "Analysis" },
-  { slug: "math", label: "Math" },
-  { slug: "report", label: "Report" },
+  { slug: "math", label: "Math check" },
+  { slug: "report", label: "Investment report" },
 ];
+
+const FINANCIALS_SLUGS = FINANCIALS_SUBTABS.map((t) => t.slug);
 
 /** Keeps the displayed currency mirroring the active project's stored currency.
  *  No UI — the header currency control now lives in Project settings. */
@@ -38,6 +46,7 @@ function CurrencySync() {
 /** Sidebar project switcher: clicking the up/down arrow opens a list of the
  *  other projects to jump straight to, instead of bouncing to the landing page. */
 function ProjectSwitcher({ currentId }: { currentId: string }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -86,12 +95,12 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
             boxShadow: "var(--shadow-lg)",
           }}
         >
-          <div className="label-mono px-2 py-1.5">Switch project</div>
+          <div className="label-mono px-2 py-1.5">{t("Switch project")}</div>
           <div className="max-h-[300px] overflow-auto flex flex-col gap-0.5">
             {!loaded ? (
-              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">Loading…</div>
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">{t("Loading…")}</div>
             ) : projects.length === 0 ? (
-              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">No projects yet.</div>
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">{t("No projects yet.")}</div>
             ) : (
               projects.map((p) => {
                 const active = p.id === currentId;
@@ -106,7 +115,7 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
                     style={active ? { background: "var(--accent-soft)", color: "var(--accent)" } : undefined}
                   >
                     <span className="truncate">{p.name}</span>
-                    {active && <span className="text-[10px] font-bold uppercase tracking-wider shrink-0">Current</span>}
+                    {active && <span className="text-[10px] font-bold uppercase tracking-wider shrink-0">{t("Current")}</span>}
                   </Link>
                 );
               })
@@ -118,7 +127,7 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[12.5px] font-bold text-accent transition-colors hover:bg-[var(--accent-soft)]"
           >
-            <Plus size={14} /> New / all projects
+            <Plus size={14} /> {t("New / all projects")}
           </Link>
         </div>
       )}
@@ -128,31 +137,67 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
 
 function ShellChrome({ id, children }: { id: string; children: React.ReactNode }) {
   const { project } = useProjectContext();
+  const { user } = useSession();
+  const { t } = useI18n();
   const pathname = usePathname();
   const base = `/projects/${id}`;
 
-  const sub = pathname.slice(base.length).replace(/^\//, ""); // "", "inputs", "manage"…
-  const inFinancials = ["inputs", "analysis", "math", "report"].includes(sub);
+  const sub = pathname.slice(base.length).replace(/^\//, ""); // "", "construction", "manage"…
+  const inFinancials = FINANCIALS_SLUGS.includes(sub);
   const inManage = sub === "manage";
+  const inScheduling = sub === "scheduling";
+  const inFiles = sub === "files";
   const inSettings = sub === "settings";
   const isDashboard = sub === "";
 
+  // Pending-decision badge on Jobs & Bids: bids that have arrived but aren't
+  // yet acted on. Mirrors the Dashboard's "Bids needing your decision" count.
+  const pendingBids =
+    project?.jobs.reduce(
+      (n, j) => n + j.bidders.filter((b) => b.status === "Bid received").length,
+      0,
+    ) ?? 0;
+
+  // Primary "WORKSPACE" group — the project's own screens.
   const nav = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: base, active: isDashboard },
-    { key: "financials", label: "Financials", icon: Calculator, href: `${base}/inputs`, active: inFinancials },
-    { key: "jobs", label: "Jobs & Bids", icon: LayoutGrid, href: `${base}/manage`, active: inManage },
-    { key: "subs", label: "Subcontractors", icon: Users, href: `/subcontractors?from=${id}`, active: false },
+    { key: "financials", label: "Financials", icon: Calculator, href: `${base}/construction`, active: inFinancials },
+    {
+      key: "jobs",
+      label: "Jobs & Bids",
+      icon: LayoutGrid,
+      href: `${base}/manage`,
+      active: inManage,
+      badge: pendingBids || undefined,
+    },
+    { key: "scheduling", label: "Scheduling", icon: CalendarRange, href: `${base}/scheduling`, active: inScheduling },
+    { key: "files", label: "Files", icon: FolderOpen, href: `${base}/files`, active: inFiles },
   ];
 
+  // Bottom group — cross-cutting destinations + the user card.
+  const bottomNav = [
+    { key: "subs", label: "Subcontractors", icon: Users, href: `/subcontractors?from=${id}`, active: false },
+    { key: "settings", label: "Project settings", icon: Settings, href: `${base}/settings`, active: inSettings },
+  ];
+
+  const navItemStyle = (active: boolean): React.CSSProperties =>
+    active
+      ? { background: "var(--accent-soft)", color: "var(--accent)" }
+      : { color: "var(--muted)" };
+
   const screen = isDashboard
-    ? { kicker: "Overview", title: "Dashboard" }
+    ? { kicker: t("Overview"), title: t("Dashboard") }
     : inFinancials
-      ? { kicker: "Project finance", title: "Financials" }
+      ? { kicker: t("Project finance"), title: t("Financials") }
       : inManage
-        ? { kicker: "The hero workspace", title: "Jobs & Bids" }
-        : inSettings
-          ? { kicker: "Preferences", title: "Project settings" }
-          : { kicker: "Project", title: project?.name ?? "Project" };
+        ? { kicker: t("The hero workspace"), title: t("Jobs & Bids") }
+        : inScheduling
+          ? { kicker: t("Timeline"), title: t("Scheduling") }
+          : inFiles
+            ? { kicker: t("Workspace"), title: t("Files") }
+            : inSettings
+              ? { kicker: t("Preferences"), title: t("Project settings") }
+              : { kicker: t("Project"), title: project?.name ?? t("Project") };
 
   const initials = (project?.name ?? "Project")
     .split(/\s+/)
@@ -183,15 +228,15 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-[13.5px] truncate">{project?.name ?? "Project"}</div>
+              <div className="font-bold text-[13.5px] truncate">{project?.name ?? t("Project")}</div>
               <div className="text-[11px] text-ink-muted font-medium">
-                {project ? `${project.holdYears}-yr hold · Active` : "Loading…"}
+                {project ? t("{years}-yr hold · Active", { years: project.holdYears }) : t("Loading…")}
               </div>
             </div>
             <ProjectSwitcher currentId={id} />
           </div>
 
-          <div className="label-mono px-2 pb-2">Workspace</div>
+          <div className="label-mono px-2 pb-2">{t("Workspace")}</div>
           <nav className="flex flex-col gap-1">
             {nav.map((item) => {
               const Icon = item.icon;
@@ -199,30 +244,72 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold transition-colors"
-                  style={item.active
-                    ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
-                    : { color: "var(--muted)" }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold transition-colors hover:bg-[var(--glass-2)]"
+                  style={navItemStyle(item.active)}
                 >
                   <Icon size={19} className={item.active ? "text-accent" : ""} />
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left">{t(item.label)}</span>
+                  {item.badge != null && (
+                    <span
+                      className="text-[10.5px] font-extrabold leading-none px-2 py-1 rounded-full"
+                      style={{ background: "var(--accent)", color: "#fff" }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Project settings sits just below the workspace nav. */}
-          <div className="h-px my-3 mx-1.5" style={{ background: "var(--border)" }} />
-          <Link
-            href={`${base}/settings`}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold transition-colors"
-            style={inSettings
-              ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
-              : { color: "var(--muted)" }}
-          >
-            <Settings size={19} className={inSettings ? "text-accent" : ""} />
-            <span className="flex-1 text-left">Project settings</span>
-          </Link>
+          {/* Bottom group: cross-cutting links + the signed-in user card. */}
+          <div className="mt-auto flex flex-col gap-1">
+            <div className="h-px my-3 mx-1.5" style={{ background: "var(--border)" }} />
+            {bottomNav.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold transition-colors hover:bg-[var(--glass-2)]"
+                  style={navItemStyle(item.active)}
+                >
+                  <Icon size={19} className={item.active ? "text-accent" : ""} />
+                  <span className="flex-1 text-left">{t(item.label)}</span>
+                </Link>
+              );
+            })}
+
+            {user && (
+              <div
+                className="flex items-center gap-2.5 p-2.5 rounded-[14px] mt-1.5"
+                style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}
+              >
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt=""
+                    className="w-[30px] h-[30px] rounded-full object-cover shrink-0"
+                    style={{ border: "1px solid var(--border)" }}
+                  />
+                ) : (
+                  <div
+                    className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-white font-bold text-[12px] shrink-0"
+                    style={{ background: "linear-gradient(150deg,var(--accent),var(--accent-2))" }}
+                  >
+                    {profileInitials(user.tag)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12.5px] font-bold truncate">{user.username || `@${user.tag}`}</div>
+                  <div className="text-[10.5px] text-ink-muted">
+                    {user.role === "god" ? t("Admin · full control") : t("Project manager")}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </aside>
 
         <main className="panel flex-1 min-w-0 flex flex-col overflow-hidden self-stretch" style={{ borderRadius: 26 }}>
@@ -232,11 +319,11 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
               <div className="text-[22px] font-extrabold tracking-tight mt-0.5 truncate">{screen.title}</div>
             </div>
             <nav className="flex lg:hidden gap-1 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
-              {[...nav, { key: "settings", label: "Project settings", icon: Settings, href: `${base}/settings`, active: inSettings }].map((item) => {
+              {[...nav, ...bottomNav].map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link key={item.key} href={item.href} className="p-2 rounded-[10px]"
-                    style={item.active ? { background: "var(--seg-active)", color: "var(--accent)" } : { color: "var(--muted)" }}>
+                    style={item.active ? { background: "var(--accent-soft)", color: "var(--accent)" } : { color: "var(--muted)" }}>
                     <Icon size={18} />
                   </Link>
                 );
@@ -247,19 +334,19 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
           {inFinancials && (
             <div className="no-print px-5 sm:px-6 pt-4">
               <div className="inline-flex gap-1 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
-                {FINANCIALS_SUBTABS.map((t) => {
-                  const href = `${base}/${t.slug}`;
+                {FINANCIALS_SUBTABS.map((tab) => {
+                  const href = `${base}/${tab.slug}`;
                   const active = pathname === href;
                   return (
                     <Link
-                      key={t.slug}
+                      key={tab.slug}
                       href={href}
                       className="px-4 py-2 rounded-[10px] text-[12.5px] font-bold transition-colors"
                       style={active
                         ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
                         : { color: "var(--muted)" }}
                     >
-                      {t.label}
+                      {t(tab.label)}
                     </Link>
                   );
                 })}

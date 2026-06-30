@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2 } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 /** Centered glass card used by the login / signup / recover screens. */
 export function AuthFrame({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
@@ -8,9 +8,7 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
     <main className="min-h-screen flex items-center justify-center px-5 py-10">
       <div className="w-[400px] max-w-full">
         <div className="flex items-center gap-3 mb-6 justify-center">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(150deg,var(--accent),var(--accent-2))", boxShadow: "0 6px 16px var(--accent-soft)" }}>
-            <Building2 size={22} className="text-white" />
-          </div>
+          <Logo size={38} className="text-accent" />
           <div className="font-extrabold text-lg tracking-tight">Real Project Manager</div>
         </div>
         <div className="panel p-6">

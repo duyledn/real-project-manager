@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ChangeEven
 import { Check, Loader2, AlertCircle, GripVertical } from "lucide-react";
 import type { DragHandleProps } from "@/lib/useDragReorder";
 import { useCurrency } from "@/lib/currency";
+import { useI18n } from "@/lib/i18n";
 
 // --- Edit mode -------------------------------------------------------------
 // Lets a section flip its labeled fields between editable and read-only display
@@ -206,11 +207,12 @@ export function DragHandle({ handleProps }: { handleProps: DragHandleProps }) {
 }
 
 export function SaveIndicator({ state }: { state: "idle" | "saving" | "saved" | "error" }) {
+  const { t } = useI18n();
   if (state === "idle") return null;
   const map = {
-    saving: { icon: <Loader2 size={12} className="animate-spin" />, text: "Saving…", cls: "text-ink-muted" },
-    saved: { icon: <Check size={12} />, text: "Saved", cls: "text-green" },
-    error: { icon: <AlertCircle size={12} />, text: "Save failed", cls: "text-red" },
+    saving: { icon: <Loader2 size={12} className="animate-spin" />, text: t("Saving…"), cls: "text-ink-muted" },
+    saved: { icon: <Check size={12} />, text: t("Saved"), cls: "text-green" },
+    error: { icon: <AlertCircle size={12} />, text: t("Save failed"), cls: "text-red" },
   } as const;
   const m = map[state];
   return (

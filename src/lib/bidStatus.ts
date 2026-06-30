@@ -4,12 +4,12 @@
 
 import type { BidderStatus, Subcontractor } from "./types";
 
-/** Soft pill color per bid status (terracotta/estate palette from the handoff). */
+/** Soft pill color per bid status (evergreen/estate palette from the handoff). */
 export const BID_STATUS_COLOR: Record<BidderStatus, string> = {
   "Not sent": "#9A8F86",
   "Bid Requested": "#6B86C9",
   "Bid received": "#D9A53C",
-  "Bid approved": "#C65D3B",
+  "Bid approved": "#1F8A5B",
   "Work-in-progress": "#5E8C9E",
   Finished: "#C77E45",
   "Partially-paid": "#4FA08B",
