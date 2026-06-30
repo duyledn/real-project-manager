@@ -14,15 +14,19 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
+import { Download } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { analyzeProject } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
+import { useTheme } from "@/lib/theme";
+import { downloadCsv } from "@/lib/clipboard";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { SectionHeader } from "@/components/fields";
 
 export default function AnalysisPage() {
   const { project, loading, error } = useProjectContext();
   const { fmtMoney, currency } = useCurrency();
+  const { theme } = useTheme(); // re-read chart tokens when the theme flips
 
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
@@ -32,6 +36,46 @@ export default function AnalysisPage() {
 
   const { returns, proForma, exit } = analysis;
   const profitPositive = returns.totalProfit >= 0;
+
+  // Theme-aware chart colors pulled from the live CSS tokens (re-read on flip).
+  const css = typeof window !== "undefined" && theme ? getComputedStyle(document.documentElement) : null;
+  const cv = (name: string, fallback: string) => css?.getPropertyValue(name).trim() || fallback;
+  const COL = {
+    ebitda: cv("--accent", "#C65D3B"),
+    ebit: cv("--accent-2", "#DFA258"),
+    cash: cv("--pos", "#5AA15E"),
+    axis: cv("--muted", "#8C7E73"),
+    grid: cv("--border", "rgba(120,86,60,0.16)"),
+    text: cv("--text", "#2B2420"),
+    surface: cv("--surface-solid", "#FFFFFF"),
+  };
+  const monoFont = "JetBrains Mono";
+
+  // Operating pro forma rows (label + per-year values), reused by the table and
+  // the CSV export so they never drift.
+  const proformaRows: { label: string; values: number[]; bold?: boolean; muted?: boolean; highlight?: boolean }[] = [
+    { label: "Gross Income", values: proForma.map((y) => y.grossIncome) },
+    { label: "Vacancy Loss", values: proForma.map((y) => -y.vacancyLoss), muted: true },
+    { label: "Effective Gross Income", values: proForma.map((y) => y.effectiveGrossIncome) },
+    { label: "Operating Expenses", values: proForma.map((y) => -y.operatingExpenses), muted: true },
+    { label: "NOI / EBITDA", values: proForma.map((y) => y.ebitda), bold: true },
+    { label: "Depreciation", values: proForma.map((y) => -y.depreciation), muted: true },
+    { label: "EBIT", values: proForma.map((y) => y.ebit), bold: true },
+    { label: "Interest Expense", values: proForma.map((y) => -y.interestExpense), muted: true },
+    { label: "Pre-Tax Income (EBT)", values: proForma.map((y) => y.ebt) },
+    { label: "Tax", values: proForma.map((y) => -y.tax), muted: true },
+    { label: "Net Income", values: proForma.map((y) => y.netIncome), bold: true },
+    { label: "+ Depreciation (non-cash)", values: proForma.map((y) => y.depreciation), muted: true },
+    { label: "− Principal Paydown", values: proForma.map((y) => -y.principalPaydown), muted: true },
+    { label: "Levered Cash Flow", values: proForma.map((y) => y.cashFlow), highlight: true },
+  ];
+
+  function exportProformaCsv() {
+    const header = ["Line", ...proForma.map((y) => `Year ${y.year}`)];
+    const body = proformaRows.map((r) => [r.label, ...r.values.map((v) => Math.round(v))]);
+    const safeName = (project!.name || "project").replace(/[^\w-]+/g, "_");
+    downloadCsv(`${safeName}_operating_pro_forma_${currency}.csv`, [header, ...body]);
+  }
 
   const chartData = proForma.map((y) => ({
     year: `Y${y.year}`,
@@ -76,15 +120,19 @@ export default function AnalysisPage() {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,35,50,0.1)" />
-                <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: "IBM Plex Mono" }} stroke="#64748B" />
-                <YAxis tick={{ fontSize: 11, fontFamily: "IBM Plex Mono" }} stroke="#64748B" tickFormatter={yAxisFormatter} width={56} />
-                <Tooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ fontFamily: "IBM Plex Mono", fontSize: 12, border: "1.5px solid #1A2332", background: "#FFFFFF" }} />
-                <Legend wrapperStyle={{ fontFamily: "IBM Plex Mono", fontSize: 11 }} />
-                <ReferenceLine y={0} stroke="#1A2332" />
-                <Bar dataKey="EBITDA" fill="#1D4ED8" />
-                <Bar dataKey="EBIT" fill="#92400E" />
-                <Bar dataKey="Cash Flow" fill="#166534" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COL.grid} />
+                <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} />
+                <YAxis tick={{ fontSize: 11, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} tickFormatter={yAxisFormatter} width={56} />
+                <Tooltip
+                  formatter={(v: number) => fmtMoney(v)}
+                  cursor={{ fill: COL.grid }}
+                  contentStyle={{ fontFamily: monoFont, fontSize: 12, borderRadius: 12, border: `1px solid ${COL.grid}`, background: COL.surface, color: COL.text }}
+                />
+                <Legend wrapperStyle={{ fontFamily: monoFont, fontSize: 11, color: COL.axis }} />
+                <ReferenceLine y={0} stroke={COL.axis} />
+                <Bar dataKey="EBITDA" fill={COL.ebitda} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="EBIT" fill={COL.ebit} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="Cash Flow" fill={COL.cash} radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -93,7 +141,12 @@ export default function AnalysisPage() {
 
       {/* Pro forma table */}
       <section>
-        <SectionHeader num="03" title="Operating Pro Forma" caption="Full income statement per year, from gross rent down to levered after-tax cash flow." />
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <SectionHeader num="03" title="Operating Pro Forma" caption="Full income statement per year, from gross rent down to levered after-tax cash flow." />
+          <button onClick={exportProformaCsv} className="btn gap-1.5 shrink-0">
+            <Download size={14} /> Export CSV
+          </button>
+        </div>
         <div className="panel overflow-x-auto">
           <table className="w-full border-collapse min-w-[720px] text-sm">
             <thead>
@@ -105,20 +158,9 @@ export default function AnalysisPage() {
               </tr>
             </thead>
             <tbody>
-              <ProformaRow label="Gross Income" values={proForma.map((y) => y.grossIncome)} fmtMoney={fmtMoney} />
-              <ProformaRow label="Vacancy Loss" values={proForma.map((y) => -y.vacancyLoss)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="Effective Gross Income" values={proForma.map((y) => y.effectiveGrossIncome)} fmtMoney={fmtMoney} />
-              <ProformaRow label="Operating Expenses" values={proForma.map((y) => -y.operatingExpenses)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="NOI / EBITDA" values={proForma.map((y) => y.ebitda)} bold fmtMoney={fmtMoney} />
-              <ProformaRow label="Depreciation" values={proForma.map((y) => -y.depreciation)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="EBIT" values={proForma.map((y) => y.ebit)} bold fmtMoney={fmtMoney} />
-              <ProformaRow label="Interest Expense" values={proForma.map((y) => -y.interestExpense)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="Pre-Tax Income (EBT)" values={proForma.map((y) => y.ebt)} fmtMoney={fmtMoney} />
-              <ProformaRow label="Tax" values={proForma.map((y) => -y.tax)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="Net Income" values={proForma.map((y) => y.netIncome)} bold fmtMoney={fmtMoney} />
-              <ProformaRow label="+ Depreciation (non-cash)" values={proForma.map((y) => y.depreciation)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="− Principal Paydown" values={proForma.map((y) => -y.principalPaydown)} muted fmtMoney={fmtMoney} />
-              <ProformaRow label="Levered Cash Flow" values={proForma.map((y) => y.cashFlow)} highlight fmtMoney={fmtMoney} />
+              {proformaRows.map((r) => (
+                <ProformaRow key={r.label} label={r.label} values={r.values} bold={r.bold} muted={r.muted} highlight={r.highlight} fmtMoney={fmtMoney} />
+              ))}
             </tbody>
           </table>
         </div>
@@ -134,12 +176,16 @@ export default function AnalysisPage() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={cumulative(proForma, returns.cashInvested)} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,35,50,0.1)" />
-                <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: "IBM Plex Mono" }} stroke="#64748B" />
-                <YAxis tick={{ fontSize: 11, fontFamily: "IBM Plex Mono" }} stroke="#64748B" tickFormatter={yAxisFormatter} width={60} />
-                <Tooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ fontFamily: "IBM Plex Mono", fontSize: 12, border: "1.5px solid #1A2332", background: "#FFFFFF" }} />
-                <ReferenceLine y={0} stroke="#1A2332" />
-                <Line type="monotone" dataKey="cumulative" stroke="#166534" strokeWidth={2} dot={{ r: 3 }} name="Cumulative cash" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COL.grid} />
+                <XAxis dataKey="year" tick={{ fontSize: 12, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} />
+                <YAxis tick={{ fontSize: 11, fontFamily: monoFont, fill: COL.axis }} stroke={COL.grid} tickFormatter={yAxisFormatter} width={60} />
+                <Tooltip
+                  formatter={(v: number) => fmtMoney(v)}
+                  cursor={{ stroke: COL.grid }}
+                  contentStyle={{ fontFamily: monoFont, fontSize: 12, borderRadius: 12, border: `1px solid ${COL.grid}`, background: COL.surface, color: COL.text }}
+                />
+                <ReferenceLine y={0} stroke={COL.axis} />
+                <Line type="monotone" dataKey="cumulative" stroke={COL.cash} strokeWidth={2.5} dot={{ r: 3, fill: COL.cash }} name="Cumulative cash" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

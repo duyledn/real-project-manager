@@ -9,9 +9,11 @@ import { fmtPercent, fmtMultiple } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { NumberField, MoneyInput, MoneyField, currencySymbol, TextField, ToggleField, SaveIndicator, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
 import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
+import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { copyRowsAsTSV } from "@/lib/clipboard";
 import { ItemsTable } from "@/components/ItemsTable";
+import { ResizableTh } from "@/components/ResizableTh";
 import { ColorPicker, tint } from "@/components/ColorPicker";
 import type { Project, ExpenseFrequency, ItemGroup } from "@/lib/types";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
@@ -173,19 +175,22 @@ export default function InputsPage() {
         {/* Toolbar: view toggle, total, selection actions, copy */}
         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex border-[1.5px] border-ink overflow-hidden">
-              <button
-                onClick={() => setItemsView("table")}
-                className={`font-mono text-xs uppercase tracking-wider px-3 py-1.5 inline-flex items-center gap-1.5 border-r-[1.5px] border-ink ${itemsView === "table" ? "bg-ink text-panel" : "text-ink hover:bg-paper"}`}
-              >
-                <Table2 size={13} /> Table
-              </button>
-              <button
-                onClick={() => setItemsView("grouped")}
-                className={`font-mono text-xs uppercase tracking-wider px-3 py-1.5 inline-flex items-center gap-1.5 ${itemsView === "grouped" ? "bg-ink text-panel" : "text-ink hover:bg-paper"}`}
-              >
-                <LayoutGrid size={13} /> Grouped
-              </button>
+            <div className="inline-flex gap-1 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
+              {([
+                { key: "table", label: "Table", Icon: Table2 },
+                { key: "grouped", label: "Grouped", Icon: LayoutGrid },
+              ] as const).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setItemsView(t.key)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12.5px] font-bold transition-colors"
+                  style={itemsView === t.key
+                    ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
+                    : { color: "var(--muted)" }}
+                >
+                  <t.Icon size={14} /> {t.label}
+                </button>
+              ))}
             </div>
             <span className="font-mono text-xs text-ink-muted">Total {fmtMoney(renoTotal)}</span>
           </div>
@@ -230,7 +235,7 @@ export default function InputsPage() {
             {project.itemGroups.map((g) => {
               const groupItems = project.items.filter((i) => i.groupId === g.id);
               return (
-                <div key={g.id} className="border-[1.5px] p-4" style={{ borderColor: g.color || "#1A2332", background: tint(g.color, "0D") }}>
+                <div key={g.id} className="border-[1.5px] p-4 rounded-[18px]" style={{ borderColor: g.color || "var(--border)", background: tint(g.color, "0D") }}>
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <ColorPicker value={g.color} onChange={(c) => updateGroup(g.id, { color: c })} size={18} title="Group color" />
                     <input
@@ -264,7 +269,7 @@ export default function InputsPage() {
             })}
 
             {/* Ungrouped items */}
-            <div className="border-[1.5px] border-hair p-4">
+            <div className="border-[1.5px] border-hair p-4 rounded-[18px]">
               <div className="flex items-center gap-2 mb-3">
                 <span className="label-mono">Ungrouped</span>
                 <span className="font-mono text-[11px] text-ink-muted">{ungroupedItems.length} item(s)</span>
@@ -568,10 +573,16 @@ function ExpandAllSheet({
  *  "Investment Estimate". Purely presentational. */
 function GroupBanner({ label, caption }: { label: string; caption?: string }) {
   return (
-    <div className="border-y-[2.5px] border-ink bg-ink text-panel px-5 py-4">
-      <div className="font-mono text-[11px] tracking-widest uppercase text-panel/70 mb-1">Section</div>
+    <div
+      className="rounded-[20px] px-5 py-4 text-white"
+      style={{
+        background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+        boxShadow: "0 10px 26px var(--accent-soft)",
+      }}
+    >
+      <div className="font-mono text-[11px] tracking-widest uppercase text-white/75 mb-1">Section</div>
       <h2 className="font-display font-extrabold text-2xl uppercase tracking-wide leading-none">{label}</h2>
-      {caption && <p className="text-sm text-panel/80 mt-1.5 max-w-2xl">{caption}</p>}
+      {caption && <p className="text-sm text-white/85 mt-1.5 max-w-2xl">{caption}</p>}
     </div>
   );
 }
@@ -611,6 +622,10 @@ function RecurringTable({
     rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0) + (pinnedRow?.amount ?? 0);
   const { currency } = useCurrency();
 
+  // Resizable columns (shared across the income & expense tables).
+  const { widths, startResize } = useColumnWidths("recurring", { label: 220, amount: 144, freq: 176, annual: 128 });
+  const tableWidth = 40 + widths.label + widths.amount + widths.freq + widths.annual + 40;
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
@@ -621,6 +636,7 @@ function RecurringTable({
         ? moveItemsBefore(rows, selected, to)
         : moveItem(rows, from, to);
     onReorderIds(newRows.map((r) => r.id));
+    return draggedId ? newRows.findIndex((r) => r.id === draggedId) : to;
   });
 
   function toggleRow(id: string) {
@@ -685,10 +701,18 @@ function RecurringTable({
         </button>
       </div>
       <div className="panel overflow-x-auto">
-        <table ref={tableRef} className="w-full border-collapse min-w-[520px]">
+        <table ref={tableRef} className="border-collapse" style={{ tableLayout: "fixed", width: tableWidth }}>
+          <colgroup>
+            <col style={{ width: 40 }} />
+            <col style={{ width: widths.label }} />
+            <col style={{ width: widths.amount }} />
+            <col style={{ width: widths.freq }} />
+            <col style={{ width: widths.annual }} />
+            <col style={{ width: 40 }} />
+          </colgroup>
           <thead>
             <tr className="border-b-[1.5px] border-ink">
-              <th className="w-10 p-2.5">
+              <th className="p-2.5">
                 <input
                   type="checkbox"
                   aria-label="Select all rows"
@@ -696,11 +720,11 @@ function RecurringTable({
                   onChange={toggleAll}
                 />
               </th>
-              <th className="text-left label-mono p-2.5">{labelHeader}</th>
-              <th className="text-left label-mono p-2.5 w-36">Amount</th>
-              <th className="text-left label-mono p-2.5 w-44">Frequency</th>
-              <th className="text-right label-mono p-2.5 w-32">Annual Total</th>
-              <th className="w-10" />
+              <ResizableTh label={labelHeader} col="label" startResize={startResize} />
+              <ResizableTh label="Amount" col="amount" startResize={startResize} />
+              <ResizableTh label="Frequency" col="freq" startResize={startResize} />
+              <ResizableTh label="Annual Total" col="annual" startResize={startResize} align="right" />
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -721,8 +745,10 @@ function RecurringTable({
               <tr
                 key={row.id}
                 {...drag.rowProps(idx)}
-                className={`border-b border-hair last:border-0 ${drag.dragIndex === idx ? "opacity-40" : ""} ${selected.has(row.id) ? "bg-paper" : ""}`}
-                style={drag.overIndex === idx && drag.dragIndex !== idx ? { boxShadow: "inset 0 2px 0 #1D4ED8" } : undefined}
+                className={`group border-b border-hair last:border-0 transition-colors ${drag.dragIndex === idx ? "" : "hover:bg-[var(--accent-soft)]"} ${selected.has(row.id) && drag.dragIndex !== idx ? "bg-paper" : ""}`}
+                style={drag.dragIndex === idx
+                  ? { background: "var(--surface-solid)", outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
+                  : undefined}
               >
                 <td className="p-1.5">
                   <div className="flex items-center justify-center gap-1.5">
@@ -731,6 +757,7 @@ function RecurringTable({
                       aria-label="Select row"
                       checked={selected.has(row.id)}
                       onChange={() => toggleRow(row.id)}
+                      className={`transition-opacity ${selected.has(row.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
                     />
                     <DragHandle handleProps={drag.handleProps(idx)} />
                   </div>

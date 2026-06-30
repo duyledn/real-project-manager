@@ -155,6 +155,13 @@
     background: var(--accent-soft);
     border-color: var(--accent);
   }
+  /* Native <select> cells: leave room for the dropdown arrow so the text never
+     clips into it when the column is resized narrow. */
+  select.cell-input,
+  select.cell-select {
+    padding-right: 22px;
+    text-overflow: ellipsis;
+  }
 
   /* Secondary / glass button. */
   .btn {
@@ -223,6 +230,32 @@
     @apply inline-flex items-center gap-1.5 text-[11px] font-bold;
     padding: 4px 10px;
     border-radius: 999px;
+  }
+
+  /* Column-resize grip: a thin hit-area on a header cell's right edge. */
+  .col-grip {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 9px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 5;
+    touch-action: none;
+  }
+  .col-grip::after {
+    content: "";
+    position: absolute;
+    top: 18%;
+    right: 4px;
+    width: 2px;
+    height: 64%;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background 0.15s;
+  }
+  .col-grip:hover::after {
+    background: var(--accent);
   }
 }
 

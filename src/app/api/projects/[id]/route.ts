@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getRepository } from "@/lib/storage";
+import { getRepository, getCompanyRepository } from "@/lib/storage";
+import { getCurrentUser } from "@/lib/session";
+import { canViewProject, canEditProject, canDeleteProject } from "@/lib/access";
 import { projectInputSchema } from "@/lib/defaults";
 
 export const runtime = "nodejs";
@@ -10,10 +12,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const repo = getRepository();
-  const project = await repo.get(id);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const project = await getRepository().get(id);
+  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const company = await getCompanyRepository().getById(project.companyId);
+  if (!canViewProject(user, project, company)) {
+    return NextResponse.json({ error: "You don't have access to this project" }, { status: 403 });
   }
   return NextResponse.json(project);
 }
@@ -23,6 +29,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const existing = await getRepository().get(id);
+  if (!existing) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const company = await getCompanyRepository().getById(existing.companyId);
+  if (!canEditProject(user, existing, company)) {
+    return NextResponse.json({ error: "You can't edit this project" }, { status: 403 });
+  }
 
   let body: unknown;
   try {
@@ -39,11 +54,14 @@ export async function PUT(
     );
   }
 
-  const repo = getRepository();
-  const updated = await repo.update(id, parsed.data);
-  if (!updated) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
+  // Ownership fields can't be reassigned through the autosave PUT; preserve the
+  // server's source of truth for companyId + memberIds.
+  const updated = await getRepository().update(id, {
+    ...parsed.data,
+    companyId: existing.companyId,
+    memberIds: existing.memberIds,
+  });
+  if (!updated) return NextResponse.json({ error: "Project not found" }, { status: 404 });
   return NextResponse.json(updated);
 }
 
@@ -52,10 +70,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const repo = getRepository();
-  const ok = await repo.remove(id);
-  if (!ok) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const project = await getRepository().get(id);
+  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const company = await getCompanyRepository().getById(project.companyId);
+  if (!canDeleteProject(user, project, company)) {
+    return NextResponse.json({ error: "Only the company owner can delete this project" }, { status: 403 });
   }
+
+  await getRepository().remove(id);
   return NextResponse.json({ ok: true });
 }

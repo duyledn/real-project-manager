@@ -6,7 +6,13 @@
       "Bash(mkdir -p \"C:\\\\Users\\\\lehoa\\\\Downloads\\\\remodel-estimator\\\\.claude\" && echo '{\"version\":\"0.0.1\",\"configurations\":[{\"name\":\"remodel-estimator\",\"runtimeExecutable\":\"npm\",\"runtimeArgs\":[\"run\",\"dev\"],\"port\":3000}]}' > \"C:\\\\Users\\\\lehoa\\\\Downloads\\\\remodel-estimator\\\\.claude\\\\launch.json\")",
       "mcp__Claude_Preview__preview_start",
       "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\lehoa\\\\Downloads\\\\remodel-estimator\\\\.next\" -ErrorAction SilentlyContinue)",
-      "Bash(Write-Host \"Cleared\")"
+      "Bash(Write-Host \"Cleared\")",
+      "Bash(npm run *)",
+      "Bash(node -e \"const d=require\\('./data/projects.json'\\); console.log\\('projects:',d.length\\); console.log\\('keys:',Object.keys\\(d[0]\\).join\\(', '\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(node -e \"const d=require\\('./data/projects.json'\\); const p=d[0]; console.log\\('investmentStrategy:', JSON.stringify\\(p.investmentStrategy\\)\\); console.log\\('profileImage:', JSON.stringify\\(p.profileImage\\)\\); console.log\\('bidders cleared:', p.jobs.every\\(j=>j.bidders.length===0\\)\\);\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

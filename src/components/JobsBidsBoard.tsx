@@ -17,7 +17,9 @@ import { syncJobFromBidders } from "@/lib/jobs";
 import { BIDDER_STATUSES } from "@/lib/types";
 import type { Project, Job, Bidder, SubcontractorWithJobs, BidderStatus } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
+import { useColumnWidths } from "@/lib/useColumnWidths";
 import { MoneyInput } from "@/components/fields";
+import { ResizableTh } from "@/components/ResizableTh";
 import {
   bidStatusColor,
   hexAlpha,
@@ -411,38 +413,44 @@ function SpreadsheetView({
   removeBidder: (jobId: string, bidId: string) => void;
   addBidRow: () => void;
 }) {
-  const th = "p-2.5 text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-muted";
-  const cellSelect = "w-full bg-transparent text-[13px] text-ink outline-none px-2.5 py-2.5 cursor-pointer";
-  const td: React.CSSProperties = { border: "1px solid var(--border)", padding: 0 };
+  // Report-style data table: clean horizontal rules, no vertical gridlines, a
+  // strong header underline, alternating row tint, and a soft hover. Columns are
+  // resizable via the grip on each header's right edge.
+  const cellSelect = "cell-select w-full bg-transparent text-[13px] text-ink outline-none px-2.5 py-2.5 cursor-pointer rounded-[8px] focus:bg-[var(--accent-soft)] transition-colors";
+  const td: React.CSSProperties = { padding: 0 };
+  const sticky: React.CSSProperties = { background: "var(--glass-strong)", position: "sticky", top: 0 };
+
+  const { widths, startResize } = useColumnWidths("bids", { cat: 180, sub: 200, price: 140, status: 168 });
+  const tableWidth = 40 + widths.cat + widths.sub + widths.price + widths.status + 96 + 116;
 
   return (
-    <div className="rounded-[18px] overflow-hidden panel">
+    <div className="panel overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="border-collapse w-full" style={{ minWidth: 860 }}>
+        <table className="border-collapse text-sm" style={{ tableLayout: "fixed", width: tableWidth }}>
+          <colgroup>
+            <col style={{ width: 40 }} />
+            <col style={{ width: widths.cat }} />
+            <col style={{ width: widths.sub }} />
+            <col style={{ width: widths.price }} />
+            <col style={{ width: widths.status }} />
+            <col style={{ width: 96 }} />
+            <col style={{ width: 116 }} />
+          </colgroup>
           <thead>
-            <tr>
-              {["#", "Job / Category", "Subcontractor", "Bid price", "Status", "Doc", "Compliance"].map((h, i) => (
-                <th
-                  key={h}
-                  className={th}
-                  style={{
-                    textAlign: i === 0 ? "center" : i === 3 ? "right" : i >= 5 ? "center" : "left",
-                    width: i === 0 ? 40 : i === 5 ? 96 : i === 6 ? 116 : undefined,
-                    border: "1px solid var(--border)",
-                    background: "var(--glass-strong)",
-                    position: "sticky",
-                    top: 0,
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
+            <tr className="border-b-[1.5px] border-ink">
+              <th className="label-mono p-2.5 text-center" style={sticky}>#</th>
+              <ResizableTh label="Job / Category" col="cat" startResize={startResize} style={sticky} />
+              <ResizableTh label="Subcontractor" col="sub" startResize={startResize} style={sticky} />
+              <ResizableTh label="Bid price" col="price" startResize={startResize} align="right" style={sticky} />
+              <ResizableTh label="Status" col="status" startResize={startResize} style={sticky} />
+              <th className="label-mono p-2.5 text-center" style={sticky}>Doc</th>
+              <th className="label-mono p-2.5 text-center" style={sticky}>Compliance</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center text-ink-muted text-sm p-8" style={{ border: "1px solid var(--border)" }}>
+                <td colSpan={7} className="text-center text-ink-muted text-sm p-8">
                   No bids yet. Add your first bid row below.
                 </td>
               </tr>
@@ -452,8 +460,12 @@ function SpreadsheetView({
                 const comp = subCompliance(sub);
                 const color = bidStatusColor(bidder.status);
                 return (
-                  <tr key={bidder.id} style={{ background: idx % 2 ? "var(--glass-2)" : "transparent" }}>
-                    <td style={{ ...td, textAlign: "center", background: "var(--glass-2)" }}>
+                  <tr
+                    key={bidder.id}
+                    className="border-b border-hair last:border-0 transition-colors hover:bg-[var(--accent-soft)]"
+                    style={{ background: idx % 2 ? "var(--glass-2)" : "transparent" }}
+                  >
+                    <td style={{ ...td, textAlign: "center" }}>
                       <span className="font-mono text-[11px] text-faint">{idx + 1}</span>
                     </td>
                     <td style={td}>
@@ -491,18 +503,20 @@ function SpreadsheetView({
                       </div>
                     </td>
                     <td style={td}>
-                      <select
-                        value={bidder.status}
-                        onChange={(e) => editBidder(job.id, bidder.id, { status: e.target.value as BidderStatus })}
-                        className="w-full text-[12.5px] font-bold outline-none px-2.5 py-2.5 cursor-pointer"
-                        style={{ color, background: hexAlpha(color, 0.14) }}
-                      >
-                        {BIDDER_STATUSES.map((s) => (
-                          <option key={s} value={s} style={{ color: "var(--text)", background: "var(--surface-solid)" }}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="px-1.5 py-1.5">
+                        <select
+                          value={bidder.status}
+                          onChange={(e) => editBidder(job.id, bidder.id, { status: e.target.value as BidderStatus })}
+                          className="w-full text-[12px] font-bold outline-none px-2.5 py-1.5 cursor-pointer rounded-full text-center"
+                          style={{ color, background: hexAlpha(color, 0.16) }}
+                        >
+                          {BIDDER_STATUSES.map((s) => (
+                            <option key={s} value={s} style={{ color: "var(--text)", background: "var(--surface-solid)" }}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                     <td style={{ ...td, textAlign: "center" }}>
                       {bidder.bidLink ? (
@@ -528,7 +542,7 @@ function SpreadsheetView({
                         </button>
                       )}
                     </td>
-                    <td style={{ ...td }}>
+                    <td style={td}>
                       <div className="flex items-center justify-center gap-2">
                         {comp.ok ? (
                           <CheckCircle2 size={17} className="text-green" />

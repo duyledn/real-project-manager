@@ -35,7 +35,9 @@ export function useSubcontractors() {
         body: JSON.stringify(input),
       });
       if (!res.ok) throw new Error("Could not create subcontractor");
+      const created = (await res.json()) as SubcontractorWithJobs;
       await load();
+      return created;
     },
     [load],
   );

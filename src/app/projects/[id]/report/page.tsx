@@ -93,7 +93,7 @@ export default function ReportPage() {
           </div>
           <h1 className="font-display font-extrabold text-4xl leading-none mb-3">{project.name}</h1>
           <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs text-ink-muted">
-            <span>Buy-Rehab-Hold Rental</span>
+            <span>{project.investmentStrategy || "Buy-Rehab-Hold Rental"}</span>
             <span>{project.holdYears}-Year Hold</span>
             <span>Prepared {generatedOn}</span>
             <span>Figures in {currency}</span>

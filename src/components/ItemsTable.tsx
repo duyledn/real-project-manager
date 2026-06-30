@@ -5,15 +5,24 @@ import { Plus, X } from "lucide-react";
 import type { RenovationItem } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
 import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
+import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { DragHandle, MoneyInput, NumberInput, currencySymbol } from "@/components/fields";
 import { ColorPicker, tint } from "@/components/ColorPicker";
+import { ResizableTh } from "@/components/ResizableTh";
+
+// Resizable column widths are shared by `key` so the grouped-view sub-tables
+// all line up. Fixed columns (the select/remove gutters) aren't resizable.
+const COL_DEFAULTS = { item: 260, cat: 160, qty: 96, cost: 132, total: 132 };
+const SEL_W = 64;
+const RM_W = 44;
 
 /**
  * The Itemized Remodel Costs table, rendered for any list of items (the whole
  * list in Table view, or one group's items in Grouped view). Self-contained
  * drag-reorder + Enter navigation; all edits flow back through callbacks that
- * operate on the parent's global item list by id.
+ * operate on the parent's global item list by id. Columns are resizable by
+ * dragging the grip on the right edge of each header cell.
  */
 export function ItemsTable({
   items,
@@ -43,6 +52,9 @@ export function ItemsTable({
   const { currency } = useCurrency();
   const subtotal = items.reduce((s, i) => s + i.qty * i.unitCost, 0);
 
+  const { widths, startResize } = useColumnWidths("items", COL_DEFAULTS);
+  const tableWidth = SEL_W + widths.item + widths.cat + widths.qty + widths.cost + widths.total + RM_W;
+
   const drag = useDragReorder((from, to) => {
     const draggedId = items[from]?.id;
     const newItems =
@@ -50,6 +62,8 @@ export function ItemsTable({
         ? moveItemsBefore(items, selected, to)
         : moveItem(items, from, to);
     onReorderIds(newItems.map((i) => i.id));
+    // Tell the hook where the dragged item landed so live reordering tracks it.
+    return draggedId ? newItems.findIndex((i) => i.id === draggedId) : to;
   });
 
   const tableRef = useRef<HTMLTableElement>(null);
@@ -76,10 +90,19 @@ export function ItemsTable({
   return (
     <>
       <div className="panel overflow-x-auto">
-        <table ref={tableRef} className="w-full border-collapse min-w-[600px]">
+        <table ref={tableRef} className="border-collapse" style={{ tableLayout: "fixed", width: tableWidth }}>
+          <colgroup>
+            <col style={{ width: SEL_W }} />
+            <col style={{ width: widths.item }} />
+            <col style={{ width: widths.cat }} />
+            <col style={{ width: widths.qty }} />
+            <col style={{ width: widths.cost }} />
+            <col style={{ width: widths.total }} />
+            <col style={{ width: RM_W }} />
+          </colgroup>
           <thead>
             <tr className="border-b-[1.5px] border-ink">
-              <th className="w-16 p-2.5">
+              <th className="p-2.5">
                 <input
                   type="checkbox"
                   aria-label="Select all"
@@ -87,12 +110,12 @@ export function ItemsTable({
                   onChange={() => onToggleSelectAll(items.map((i) => i.id))}
                 />
               </th>
-              <th className="text-left label-mono p-2.5">Item</th>
-              <th className="text-left label-mono p-2.5 w-40">Category</th>
-              <th className="text-left label-mono p-2.5 w-24">Qty</th>
-              <th className="text-left label-mono p-2.5 w-32">Unit Cost</th>
-              <th className="text-right label-mono p-2.5 w-32">Total</th>
-              <th className="w-10" />
+              <ResizableTh label="Item" col="item" startResize={startResize} />
+              <ResizableTh label="Category" col="cat" startResize={startResize} />
+              <ResizableTh label="Qty" col="qty" startResize={startResize} />
+              <ResizableTh label="Unit Cost" col="cost" startResize={startResize} />
+              <ResizableTh label="Total" col="total" startResize={startResize} align="right" />
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -103,14 +126,15 @@ export function ItemsTable({
             ) : (
               items.map((item, idx) => {
                 const isSel = selected.has(item.id);
+                const isDragging = drag.dragIndex === idx;
                 return (
                   <tr
                     key={item.id}
                     {...drag.rowProps(idx)}
-                    className={`border-b border-hair last:border-0 ${drag.dragIndex === idx ? "opacity-40" : ""} ${isSel ? "bg-paper" : ""}`}
+                    className={`group border-b border-hair last:border-0 transition-colors ${isDragging ? "" : "hover:bg-[var(--accent-soft)]"} ${isSel && !isDragging ? "bg-paper" : ""}`}
                     style={
-                      drag.overIndex === idx && drag.dragIndex !== idx
-                        ? { boxShadow: "inset 0 2px 0 #1D4ED8" }
+                      isDragging
+                        ? { background: "var(--surface-solid)", outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
                         : !isSel && item.color
                           ? { backgroundColor: tint(item.color) }
                           : undefined
@@ -118,7 +142,13 @@ export function ItemsTable({
                   >
                     <td className="p-1.5">
                       <div className="flex items-center justify-center gap-1.5">
-                        <input type="checkbox" aria-label="Select item" checked={isSel} onChange={() => onToggleSelect(item.id)} />
+                        <input
+                          type="checkbox"
+                          aria-label="Select item"
+                          checked={isSel}
+                          onChange={() => onToggleSelect(item.id)}
+                          className={`transition-opacity ${isSel ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
+                        />
                         <ColorPicker value={item.color} onChange={(c) => onUpdate(item.id, { color: c })} title="Item color" />
                         <DragHandle handleProps={drag.handleProps(idx)} />
                       </div>
@@ -165,7 +195,7 @@ export function ItemsTable({
                         />
                       </div>
                     </td>
-                    <td className="p-2.5 font-mono font-semibold text-right">{fmtMoney(item.qty * item.unitCost)}</td>
+                    <td className="p-2.5 font-mono font-semibold text-right truncate">{fmtMoney(item.qty * item.unitCost)}</td>
                     <td className="p-1.5 text-center">
                       <button onClick={() => onRemove(item.id)} className="icon-btn" aria-label="Remove item">
                         <X size={13} />

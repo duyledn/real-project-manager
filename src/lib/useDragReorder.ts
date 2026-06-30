@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type DragEvent } from "react";
+import { useRef, useState, type DragEvent } from "react";
 
 /** Pure helper: return a new array with the item at `from` moved to `to`. */
 export function moveItem<T>(arr: T[], from: number, to: number): T[] {
@@ -44,25 +44,37 @@ export interface DropRowProps {
 }
 
 /**
- * Generic list-row reordering via the native HTML5 drag API.
- * Only the drag *handle* is draggable (spread `handleProps` onto it), so the
- * inputs inside each row stay fully usable. Each row is a drop target (spread
- * `rowProps`). `onReorder(from, to)` fires when an item is dropped on a new row.
+ * Generic list-row reordering via the native HTML5 drag API, with **live**
+ * (Apple-style) reordering: as the pointer moves over a new row, the list is
+ * reordered immediately so the rows visibly shift and a gap opens under the
+ * dragged item — no separate drop-line indicator needed.
+ *
+ * Only the drag *handle* is draggable (spread `handleProps` onto it) so the
+ * inputs inside each row stay usable. Every row is a drop target (spread
+ * `rowProps`). `onReorder(from, to)` runs on each step; if it returns the
+ * dragged item's new index (e.g. for multi-select block moves) that value is
+ * tracked, otherwise `to` is assumed.
  */
-export function useDragReorder(onReorder: (from: number, to: number) => void) {
+export function useDragReorder(onReorder: (from: number, to: number) => number | void) {
+  // The dragged item's *current* index. Kept in a ref so the rapid stream of
+  // dragover events always reorders from the latest position, and in state so
+  // rows can render the "lifted" style.
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const dragIdx = useRef<number | null>(null);
 
+  function setIdx(i: number | null) {
+    dragIdx.current = i;
+    setDragIndex(i);
+  }
   function reset() {
-    setDragIndex(null);
-    setOverIndex(null);
+    setIdx(null);
   }
 
   function handleProps(index: number): DragHandleProps {
     return {
       draggable: true,
       onDragStart: (e: DragEvent) => {
-        setDragIndex(index);
+        setIdx(index);
         e.dataTransfer.effectAllowed = "move";
         // Firefox requires data to be set for a drag to actually start.
         try {
@@ -78,18 +90,22 @@ export function useDragReorder(onReorder: (from: number, to: number) => void) {
   function rowProps(index: number): DropRowProps {
     return {
       onDragOver: (e: DragEvent) => {
-        if (dragIndex === null) return;
+        const from = dragIdx.current;
+        if (from === null) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        if (overIndex !== index) setOverIndex(index);
+        if (from === index) return;
+        const newIndex = onReorder(from, index);
+        setIdx(typeof newIndex === "number" ? newIndex : index);
       },
       onDrop: (e: DragEvent) => {
         e.preventDefault();
-        if (dragIndex !== null && dragIndex !== index) onReorder(dragIndex, index);
         reset();
       },
     };
   }
 
-  return { dragIndex, overIndex, handleProps, rowProps };
+  // `overIndex` is retained for API compatibility but mirrors the live drag
+  // position; tables now show movement instead of a drop line.
+  return { dragIndex, overIndex: dragIndex, handleProps, rowProps };
 }

@@ -39,13 +39,17 @@ import type {
   SubcontractorInput,
   SubcontractorWithJobs,
   RelatedJob,
+  User,
+  Company,
 } from "./types";
 import { totalRenovationCost } from "./calculations";
 import { analyzeProject } from "./calculations";
 import { DEFAULT_JOB_CATEGORIES } from "./jobs";
+import { hashSecret } from "./auth/secret";
 
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
+  all(): Promise<Project[]>;
   get(id: string): Promise<Project | null>;
   create(input: ProjectInput): Promise<Project>;
   update(id: string, input: ProjectInput): Promise<Project | null>;
@@ -56,6 +60,8 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "projects.json");
 const SUBCONTRACTORS_FILE = path.join(DATA_DIR, "subcontractors.json");
 const JOB_CATEGORIES_FILE = path.join(DATA_DIR, "job-categories.json");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+const COMPANIES_FILE = path.join(DATA_DIR, "companies.json");
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -71,6 +77,10 @@ function normalizeProject(p: Project): Project {
   return {
     ...p,
     currency: p.currency ?? "USD",
+    companyId: p.companyId ?? "",
+    memberIds: Array.isArray(p.memberIds) ? p.memberIds : [],
+    investmentStrategy: p.investmentStrategy ?? "Buy-Rehab-Hold Rental",
+    profileImage: p.profileImage ?? "",
     startDate: p.startDate ?? "",
     projectAddress: p.projectAddress ?? "",
     projectManager: p.projectManager ?? "",
@@ -103,6 +113,11 @@ function toSummary(p: Project): ProjectSummary {
     holdYears: p.holdYears,
     totalRenovationCost: totalRenovationCost(p),
     netProfit: analysis.returns.totalProfit,
+    companyId: p.companyId ?? "",
+    memberIds: Array.isArray(p.memberIds) ? p.memberIds : [],
+    // +1 for the company owner; canDelete is filled in per-viewer by the API.
+    memberCount: new Set(Array.isArray(p.memberIds) ? p.memberIds : []).size + 1,
+    canDelete: false,
   };
 }
 
@@ -133,6 +148,10 @@ class JsonFileRepository implements ProjectRepository {
     return all
       .map(toSummary)
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  }
+
+  async all(): Promise<Project[]> {
+    return this.readAll();
   }
 
   async get(id: string): Promise<Project | null> {
@@ -349,4 +368,160 @@ let catRepo: JobCategoryRepository | null = null;
 export function getJobCategoryRepository(): JobCategoryRepository {
   if (!catRepo) catRepo = new JsonJobCategoryRepository();
   return catRepo;
+}
+
+// ---------------------------------------------------------------------------
+// USERS & COMPANIES — accounts and collaboration
+// ---------------------------------------------------------------------------
+
+export interface UserRepository {
+  list(): Promise<User[]>;
+  getById(id: string): Promise<User | null>;
+  getByTag(tag: string): Promise<User | null>;
+  getByUsername(username: string): Promise<User | null>;
+  create(input: Omit<User, "id" | "createdAt">): Promise<User>;
+  update(id: string, patch: Partial<User>): Promise<User | null>;
+}
+
+class JsonUserRepository implements UserRepository {
+  private read(): Promise<User[]> {
+    return readJsonArray<User>(USERS_FILE);
+  }
+  private write(rows: User[]): Promise<void> {
+    return writeJsonAtomic(USERS_FILE, rows);
+  }
+  async list(): Promise<User[]> {
+    return this.read();
+  }
+  async getById(id: string): Promise<User | null> {
+    return (await this.read()).find((u) => u.id === id) ?? null;
+  }
+  async getByTag(tag: string): Promise<User | null> {
+    const t = tag.toLowerCase();
+    return (await this.read()).find((u) => u.tag.toLowerCase() === t) ?? null;
+  }
+  async getByUsername(username: string): Promise<User | null> {
+    const u = username.toLowerCase();
+    return (await this.read()).find((x) => x.username.toLowerCase() === u) ?? null;
+  }
+  async create(input: Omit<User, "id" | "createdAt">): Promise<User> {
+    const rows = await this.read();
+    const user: User = { ...input, id: newId(), createdAt: nowIso() };
+    rows.push(user);
+    await this.write(rows);
+    return user;
+  }
+  async update(id: string, patch: Partial<User>): Promise<User | null> {
+    const rows = await this.read();
+    const idx = rows.findIndex((u) => u.id === id);
+    if (idx === -1) return null;
+    rows[idx] = { ...rows[idx], ...patch, id, createdAt: rows[idx].createdAt };
+    await this.write(rows);
+    return rows[idx];
+  }
+}
+
+let userRepo: UserRepository | null = null;
+export function getUserRepository(): UserRepository {
+  if (!userRepo) userRepo = new JsonUserRepository();
+  return userRepo;
+}
+
+export interface CompanyRepository {
+  list(): Promise<Company[]>;
+  getById(id: string): Promise<Company | null>;
+  create(name: string, ownerId: string): Promise<Company>;
+  update(id: string, patch: Partial<Company>): Promise<Company | null>;
+  remove(id: string): Promise<boolean>;
+}
+
+class JsonCompanyRepository implements CompanyRepository {
+  private read(): Promise<Company[]> {
+    return readJsonArray<Company>(COMPANIES_FILE);
+  }
+  private write(rows: Company[]): Promise<void> {
+    return writeJsonAtomic(COMPANIES_FILE, rows);
+  }
+  async list(): Promise<Company[]> {
+    return this.read();
+  }
+  async getById(id: string): Promise<Company | null> {
+    return (await this.read()).find((c) => c.id === id) ?? null;
+  }
+  async create(name: string, ownerId: string): Promise<Company> {
+    const rows = await this.read();
+    const company: Company = { id: newId(), name, ownerId, memberIds: [], createdAt: nowIso() };
+    rows.push(company);
+    await this.write(rows);
+    return company;
+  }
+  async update(id: string, patch: Partial<Company>): Promise<Company | null> {
+    const rows = await this.read();
+    const idx = rows.findIndex((c) => c.id === id);
+    if (idx === -1) return null;
+    rows[idx] = { ...rows[idx], ...patch, id, createdAt: rows[idx].createdAt };
+    await this.write(rows);
+    return rows[idx];
+  }
+  async remove(id: string): Promise<boolean> {
+    const rows = await this.read();
+    const next = rows.filter((c) => c.id !== id);
+    if (next.length === rows.length) return false;
+    await this.write(next);
+    return true;
+  }
+}
+
+let companyRepo: CompanyRepository | null = null;
+export function getCompanyRepository(): CompanyRepository {
+  if (!companyRepo) companyRepo = new JsonCompanyRepository();
+  return companyRepo;
+}
+
+/**
+ * One-time bootstrap: seed the @god admin account, ensure a default company
+ * exists, and migrate any legacy projects that predate companies into it.
+ * Idempotent and memoized so it can be awaited freely from API routes.
+ */
+let seedPromise: Promise<void> | null = null;
+export function ensureSeeded(): Promise<void> {
+  if (!seedPromise) seedPromise = doSeed();
+  return seedPromise;
+}
+
+async function doSeed(): Promise<void> {
+  const users = getUserRepository();
+  let god = await users.getByTag("god");
+  if (!god) {
+    god = await users.create({
+      tag: "god",
+      username: "leducduy42",
+      password: hashSecret("Kiemtien@0312"),
+      pin: hashSecret("031299"),
+      role: "god",
+      avatar: "",
+    });
+  }
+
+  const companies = getCompanyRepository();
+  const all = await companies.list();
+  let home = all.find((c) => c.ownerId === god!.id);
+  if (!home) {
+    home = await companies.create("HQ", god.id);
+  }
+
+  // Migrate legacy projects with no company into the god's HQ company.
+  const raw = await readJsonArray<Project>(DATA_FILE);
+  let changed = false;
+  for (const p of raw) {
+    if (!p.companyId) {
+      p.companyId = home.id;
+      changed = true;
+    }
+    if (!Array.isArray(p.memberIds)) {
+      p.memberIds = [];
+      changed = true;
+    }
+  }
+  if (changed) await writeJsonAtomic(DATA_FILE, raw);
 }

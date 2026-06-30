@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Wallet,
   Gavel,
@@ -9,6 +10,9 @@ import {
   ShieldCheck,
   AlertTriangle,
   ArrowRight,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { useSubcontractors } from "@/lib/useSubcontractors";
@@ -16,11 +20,22 @@ import { useCurrency } from "@/lib/currency";
 import { approvedBidder } from "@/lib/jobs";
 import { pillStyle, BID_STATUS_SHORT, subCompliance, initialsOf } from "@/lib/bidStatus";
 import { SaveIndicator } from "@/components/fields";
+import type { Project } from "@/lib/types";
+
+const STRATEGY_PRESETS = [
+  "Buy-Rehab-Hold Rental",
+  "Buy-Rehab-Sell (Flip)",
+  "Short-Term / Vacation Rental",
+  "BRRRR",
+  "New Construction",
+  "Commercial / Mixed-Use",
+];
 
 export default function DashboardPage() {
-  const { project, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error, saveState } = useProjectContext();
   const { subs } = useSubcontractors();
   const { fmtMoney } = useCurrency();
+  const [editing, setEditing] = useState(false);
 
   if (loading) return <div className="text-ink-muted text-sm">Loading…</div>;
   if (error) return <div className="panel border-red text-red p-4 text-sm">{error}</div>;
@@ -69,14 +84,47 @@ export default function DashboardPage() {
     <div className="space-y-5">
       {/* Title */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display font-extrabold text-3xl leading-none">{project.name}</h1>
-          <p className="text-ink-muted text-sm mt-1.5">
-            {project.holdYears}-yr hold · {project.projectAddress || "No address set"}
-          </p>
+        <div className="flex items-center gap-3.5 min-w-0">
+          {project.profileImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={project.profileImage}
+              alt=""
+              className="w-14 h-14 rounded-[16px] object-cover shrink-0"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          ) : (
+            <div
+              className="w-14 h-14 rounded-[16px] flex items-center justify-center text-white font-extrabold text-lg shrink-0"
+              style={{ background: "linear-gradient(150deg,#7A8C5A,#9DAE6E)" }}
+            >
+              {initialsOf(project.name)}
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-display font-extrabold text-3xl leading-none truncate">{project.name}</h1>
+              <button
+                onClick={() => setEditing(true)}
+                className="icon-btn shrink-0"
+                aria-label="Edit project name, strategy and address"
+                title="Edit project details"
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
+            <p className="text-ink-muted text-sm mt-1.5">
+              {project.investmentStrategy || "Buy-Rehab-Hold Rental"} · {project.holdYears}-yr hold ·{" "}
+              {project.projectAddress || "No address set"}
+            </p>
+          </div>
         </div>
         <SaveIndicator state={saveState} />
       </div>
+
+      {editing && (
+        <EditIdentityModal project={project} setProject={setProject} onClose={() => setEditing(false)} />
+      )}
 
       {/* Metric tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -193,12 +241,117 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 ))}
-                <Link href="/subcontractors" className="text-[12px] font-bold text-accent inline-flex items-center gap-1 mt-1">
+                <Link href={`/subcontractors?from=${project.id}`} className="text-[12px] font-bold text-accent inline-flex items-center gap-1 mt-1">
                   Manage subcontractors <ArrowRight size={13} />
                 </Link>
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Quick-edit sheet for the project's identity: name, investment strategy,
+ *  and address. Binds straight to the autosaving setProject. */
+function EditIdentityModal({
+  project,
+  setProject,
+  onClose,
+}: {
+  project: Project;
+  setProject: (updater: (p: Project) => Project) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const [strategy, setStrategy] = useState(project.investmentStrategy || "Buy-Rehab-Hold Rental");
+  const [address, setAddress] = useState(project.projectAddress);
+
+  function save() {
+    const cleanName = name.trim() || project.name;
+    setProject((p) => ({
+      ...p,
+      name: cleanName,
+      investmentStrategy: strategy.trim(),
+      projectAddress: address,
+    }));
+    onClose();
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(20,12,8,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-[460px] max-w-full flex flex-col"
+        style={{
+          borderRadius: 22,
+          background: "var(--glass-strong)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid var(--border)",
+          borderTopColor: "var(--border-top)",
+          boxShadow: "var(--shadow-lg)",
+          animation: "popIn .3s cubic-bezier(.32,.72,0,1) both",
+        }}
+      >
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">Edit project</div>
+            <div className="text-lg font-extrabold tracking-tight mt-0.5">Details</div>
+          </div>
+          <button onClick={onClose} className="icon-btn" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Project name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              className="field-input text-base font-semibold"
+              autoFocus
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Investment strategy</span>
+            <input
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              list="strategy-presets"
+              className="field-input text-base font-semibold"
+              placeholder="e.g. Buy-Rehab-Hold Rental"
+            />
+            <datalist id="strategy-presets">
+              {STRATEGY_PRESETS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Address</span>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              className="field-input text-base font-semibold"
+              placeholder="123 Main St, City"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+          <button onClick={onClose} className="btn">Cancel</button>
+          <button onClick={save} className="btn btn-blue gap-1.5">
+            <Check size={16} /> Save
+          </button>
         </div>
       </div>
     </div>

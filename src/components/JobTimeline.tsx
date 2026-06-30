@@ -3,37 +3,34 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { JOB_COLOR_PALETTE, contrastText } from "@/lib/jobs";
+import { useTheme } from "@/lib/theme";
 import type { Job, JobStatus } from "@/lib/types";
 
-// Theme hexes (mirror tailwind.config.ts) — canvas needs concrete colors.
-const C = {
-  panel: "#FFFFFF",
-  paper: "#F1F3F5",
-  ink: "#1A2332",
-  inkMuted: "#64748B",
-  hair: "rgba(26,35,50,0.14)",
-  hairStrong: "rgba(26,35,50,0.28)",
-  red: "#DC2626",
-  rowAlt: "#F8FAFC",
-  selected: "rgba(29,78,216,0.10)",
-};
+const MONO = "'JetBrains Mono', monospace";
 
-/** Status → bar fill, progressing light→dark as the job advances. */
+/** Parse "#rrggbb" + alpha → rgba() string for canvas fills. */
+function hexA(hex: string, a: number): string {
+  const c = hex.replace("#", "");
+  if (c.length < 6) return hex;
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/** Status → bar fill in the warm "estate" palette, progressing as a job
+ *  advances. Vivid enough to read on both light and dark surfaces. */
 function statusFill(status: JobStatus): { bar: string; text: string } {
-  switch (status) {
-    case "Bid Requested":
-      return { bar: "#F59E0B", text: "#FFFFFF" };
-    case "Bid Approved":
-      return { bar: "#3B82F6", text: "#FFFFFF" };
-    case "Work-in-progress":
-      return { bar: "#1D4ED8", text: "#FFFFFF" };
-    case "Finished":
-      return { bar: "#16A34A", text: "#FFFFFF" };
-    case "Paid":
-      return { bar: "#166534", text: "#FFFFFF" };
-    default: // N/A
-      return { bar: "#CBD5E1", text: "#1A2332" };
-  }
+  const map: Record<JobStatus, string> = {
+    "Bid Requested": "#DFA258", // amber
+    "Bid Approved": "#C65D3B", // terracotta
+    "Work-in-progress": "#5E8C9E", // teal
+    Finished: "#5AA15E", // green
+    Paid: "#3F7E54", // deep green
+    "N/A": "#B4A89E", // faint clay
+  };
+  const bar = map[status] ?? "#B4A89E";
+  return { bar, text: contrastText(bar) };
 }
 
 const DAY = 86_400_000;
@@ -87,6 +84,7 @@ export function JobTimeline({
   const [width, setWidth] = useState(0);
   const [hoverRow, setHoverRow] = useState<number | null>(null);
   const [picker, setPicker] = useState<{ jobId: string; x: number; y: number } | null>(null);
+  const { theme } = useTheme(); // re-read tokens + redraw when the theme flips
 
   // Track container width for a responsive, crisp canvas.
   useEffect(() => {
@@ -133,22 +131,39 @@ export function JobTimeline({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
+    // Pull live design tokens so the timeline matches the active theme.
+    const cs = getComputedStyle(document.documentElement);
+    const cv = (n: string, f: string) => cs.getPropertyValue(n).trim() || f;
+    const textHex = cv("--text", "#2B2420");
+    const accentHex = cv("--accent", "#C65D3B");
+    const C = {
+      surface: cv("--surface-solid", "#FFFFFF"),
+      ink: textHex,
+      inkMuted: cv("--muted", "#8C7E73"),
+      grid: cv("--border", "rgba(120,86,60,0.16)"),
+      gridStrong: hexA(textHex, 0.22),
+      accent: accentHex,
+      rowAlt: hexA(textHex, 0.035),
+      hover: hexA(textHex, 0.06),
+      selected: hexA(accentHex, 0.12),
+    };
+
     const plotX = LABEL_W;
     const plotW = width - LABEL_W;
     const span = domain.max - domain.min;
     const xOf = (t: number) => plotX + ((t - domain.min) / span) * plotW;
 
     // Background
-    ctx.fillStyle = C.panel;
+    ctx.fillStyle = C.surface;
     ctx.fillRect(0, 0, width, height);
 
     // Row striping + selection/hover highlight
     jobs.forEach((j, i) => {
       const y = HEADER_H + i * ROW_H;
       if (j.id === selectedJobId) ctx.fillStyle = C.selected;
-      else if (i === hoverRow) ctx.fillStyle = C.paper;
-      else ctx.fillStyle = i % 2 === 0 ? C.panel : C.rowAlt;
-      ctx.fillRect(0, y, width, ROW_H);
+      else if (i === hoverRow) ctx.fillStyle = C.hover;
+      else ctx.fillStyle = i % 2 === 0 ? "transparent" : C.rowAlt;
+      if (ctx.fillStyle !== "transparent") ctx.fillRect(0, y, width, ROW_H);
     });
 
     // Month gridlines + labels
@@ -160,7 +175,7 @@ export function JobTimeline({
     ctx.textBaseline = "middle";
     months.forEach((m, idx) => {
       const x = xOf(m);
-      ctx.strokeStyle = C.hair;
+      ctx.strokeStyle = C.grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(Math.round(x) + 0.5, HEADER_H - 8);
@@ -170,8 +185,8 @@ export function JobTimeline({
       if (idx % labelEvery === 0) {
         const d = new Date(m);
         const showYear = d.getUTCMonth() === 0 || idx === 0;
-        ctx.fillStyle = C.ink;
-        ctx.font = "600 11px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = C.inkMuted;
+        ctx.font = `600 11px ${MONO}`;
         ctx.textAlign = "left";
         const label = showYear ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}` : MONTHS[d.getUTCMonth()];
         ctx.fillText(label, x + 5, HEADER_H / 2);
@@ -179,7 +194,7 @@ export function JobTimeline({
     });
 
     // Header baseline + label-gutter divider
-    ctx.strokeStyle = C.hairStrong;
+    ctx.strokeStyle = C.gridStrong;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, HEADER_H + 0.5);
@@ -192,7 +207,7 @@ export function JobTimeline({
     const now = Date.now();
     if (now >= domain.min && now <= domain.max) {
       const x = xOf(now);
-      ctx.strokeStyle = C.red;
+      ctx.strokeStyle = C.accent;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
@@ -200,8 +215,8 @@ export function JobTimeline({
       ctx.lineTo(x, height);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = C.red;
-      ctx.font = "600 9px 'IBM Plex Mono', monospace";
+      ctx.fillStyle = C.accent;
+      ctx.font = `700 9px ${MONO}`;
       ctx.textAlign = "center";
       ctx.fillText("TODAY", x, HEADER_H - 14);
     }
@@ -214,16 +229,16 @@ export function JobTimeline({
       // Color swatch (click to recolor) in the left gutter
       const sy = cy - SWATCH_SIZE / 2;
       ctx.fillStyle = barColorOf(j);
-      roundRect(ctx, SWATCH_X, sy, SWATCH_SIZE, SWATCH_SIZE, 3);
+      roundRect(ctx, SWATCH_X, sy, SWATCH_SIZE, SWATCH_SIZE, 4);
       ctx.fill();
-      ctx.strokeStyle = picker?.jobId === j.id ? "#1D4ED8" : C.hairStrong;
+      ctx.strokeStyle = picker?.jobId === j.id ? C.accent : C.gridStrong;
       ctx.lineWidth = picker?.jobId === j.id ? 2 : 1;
-      roundRect(ctx, SWATCH_X, sy, SWATCH_SIZE, SWATCH_SIZE, 3);
+      roundRect(ctx, SWATCH_X, sy, SWATCH_SIZE, SWATCH_SIZE, 4);
       ctx.stroke();
 
       // Label
-      ctx.fillStyle = j.id === selectedJobId ? "#1D4ED8" : C.ink;
-      ctx.font = `${j.id === selectedJobId ? "700" : "500"} 12px 'IBM Plex Mono', monospace`;
+      ctx.fillStyle = j.id === selectedJobId ? C.accent : C.ink;
+      ctx.font = `${j.id === selectedJobId ? "700" : "500"} 12px ${MONO}`;
       ctx.textAlign = "left";
       const label = j.category.length > 15 ? j.category.slice(0, 14) + "…" : j.category;
       ctx.fillText(label, LABEL_TEXT_X, cy);
@@ -231,21 +246,21 @@ export function JobTimeline({
       const s = parse(j.startDate);
       if (s == null) {
         ctx.fillStyle = C.inkMuted;
-        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.font = `10px ${MONO}`;
         ctx.fillText("no date", plotX + 8, cy);
         return;
       }
       const e = parse(j.endDate);
       const bar = barColorOf(j);
       const text = barTextOf(j);
-      const barH = 18;
+      const barH = 20;
       const by = cy - barH / 2;
 
       if (e == null) {
         // Milestone diamond at the start date
         const x = xOf(s);
         ctx.fillStyle = bar;
-        ctx.strokeStyle = C.ink;
+        ctx.strokeStyle = hexA(textHex, 0.25);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x, cy - 8);
@@ -256,22 +271,28 @@ export function JobTimeline({
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = C.inkMuted;
-        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.font = `10px ${MONO}`;
         ctx.textAlign = "left";
         ctx.fillText(j.startDate, x + 12, cy);
       } else {
         const x1 = xOf(s);
         const x2 = Math.max(xOf(e), x1 + 6);
         const w = x2 - x1;
-        // Bar
+        const r = 8;
+        // Bar with a subtle vertical sheen + specular top edge for the glass feel
+        const grad = ctx.createLinearGradient(0, by, 0, by + barH);
+        grad.addColorStop(0, hexA("#ffffff", 0.22));
+        grad.addColorStop(0.12, "rgba(255,255,255,0)");
         ctx.fillStyle = bar;
-        const r = 4;
+        roundRect(ctx, x1, by, w, barH, r);
+        ctx.fill();
+        ctx.fillStyle = grad;
         roundRect(ctx, x1, by, w, barH, r);
         ctx.fill();
         // Duration label inside if it fits, else to the right
         const days = Math.max(1, Math.round((e - s) / DAY));
         const durText = `${days}d`;
-        ctx.font = "600 10px 'IBM Plex Mono', monospace";
+        ctx.font = `600 10px ${MONO}`;
         const tw = ctx.measureText(durText).width;
         if (w > tw + 12) {
           ctx.fillStyle = text;
@@ -284,7 +305,7 @@ export function JobTimeline({
         }
       }
     });
-  }, [jobs, domain, width, height, hoverRow, selectedJobId, picker]);
+  }, [jobs, domain, width, height, hoverRow, selectedJobId, picker, theme]);
 
   useEffect(() => {
     draw();
@@ -365,8 +386,19 @@ export function JobTimeline({
           <>
             <div className="fixed inset-0 z-40" onClick={() => setPicker(null)} aria-hidden />
             <div
-              className="absolute z-50 bg-panel border-[1.5px] border-ink shadow-xl p-2.5"
-              style={{ left: picker.x, top: picker.y, width: 184 }}
+              className="absolute z-50 p-2.5"
+              style={{
+                left: picker.x,
+                top: picker.y,
+                width: 184,
+                borderRadius: 16,
+                background: "var(--glass-strong)",
+                backdropFilter: "var(--blur)",
+                WebkitBackdropFilter: "var(--blur)",
+                border: "1px solid var(--border)",
+                borderTopColor: "var(--border-top)",
+                boxShadow: "var(--shadow-lg)",
+              }}
             >
               <div className="label-mono mb-2">Bar Color</div>
               <div className="space-y-1">
@@ -382,8 +414,8 @@ export function JobTimeline({
                             onColorChange?.(picker.jobId, hex);
                             setPicker(null);
                           }}
-                          className="w-6 h-6 rounded-sm hover:scale-110 transition-transform"
-                          style={{ background: hex, outline: selected ? "2px solid #1A2332" : "1px solid rgba(26,35,50,0.18)", outlineOffset: selected ? "1px" : "0" }}
+                          className="w-6 h-6 rounded-md hover:scale-110 transition-transform"
+                          style={{ background: hex, outline: selected ? "2px solid var(--accent)" : "1px solid var(--border)", outlineOffset: selected ? "1px" : "0" }}
                           aria-label={`${row.name} ${hex}`}
                         />
                       );
@@ -396,7 +428,8 @@ export function JobTimeline({
                   onColorChange?.(picker.jobId, "");
                   setPicker(null);
                 }}
-                className="mt-2 w-full font-mono text-[10px] uppercase tracking-wider border border-hair py-1 hover:bg-paper transition-colors"
+                className="mt-2 w-full font-mono text-[10px] uppercase tracking-wider rounded-[10px] py-1.5 transition-colors text-ink-muted hover:text-accent"
+                style={{ border: "1px solid var(--border)", background: "var(--glass-2)" }}
               >
                 Reset to status color
               </button>
@@ -409,13 +442,13 @@ export function JobTimeline({
         {(["N/A", "Bid Requested", "Bid Approved", "Work-in-progress", "Finished", "Paid"] as JobStatus[]).map(
           (s) => (
             <span key={s} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-              <span className="w-3 h-3 rounded-sm border border-hair" style={{ background: statusFill(s).bar }} />
+              <span className="w-3 h-3 rounded-[4px]" style={{ background: statusFill(s).bar, border: "1px solid var(--border)" }} />
               {s}
             </span>
           ),
         )}
         <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-          <span className="inline-block w-3 border-t-2 border-dashed" style={{ borderColor: C.red }} /> Today
+          <span className="inline-block w-3 border-t-2 border-dashed" style={{ borderColor: "var(--accent)" }} /> Today
         </span>
       </div>
     </div>

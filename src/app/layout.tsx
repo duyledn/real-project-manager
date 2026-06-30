@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CurrencyProvider } from "@/lib/currency";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
+import { SessionProvider } from "@/lib/session-context";
 import { Background } from "@/components/Background";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "Real Project Manager",
@@ -24,8 +26,12 @@ export default function RootLayout({
       <body className="min-h-screen">
         <ThemeProvider>
           <CurrencyProvider>
-            <Background />
-            <div className="relative z-10">{children}</div>
+            <SessionProvider>
+              <Background />
+              <div className="relative z-10">
+                <AppShell>{children}</AppShell>
+              </div>
+            </SessionProvider>
           </CurrencyProvider>
         </ThemeProvider>
       </body>

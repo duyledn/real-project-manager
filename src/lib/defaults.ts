@@ -138,6 +138,16 @@ export const projectInputSchema = z.object({
   // before this field existed keep loading and PUTs don't strip it.
   currency: z.enum(["USD", "VND"]).default("USD"),
 
+  // Ownership & collaboration. Defaulted so older projects load and a PUT never
+  // strips them (the company is backfilled by the seed migration).
+  companyId: z.string().default(""),
+  memberIds: z.array(z.string()).default([]),
+
+  // Presentation-only project meta. Defaulted so older projects keep loading
+  // and a PUT never strips them.
+  investmentStrategy: z.string().default("Buy-Rehab-Hold Rental"),
+  profileImage: z.string().default(""),
+
   // Phase 2 meta — all optional/defaulted so pre-Phase-2 projects still load.
   startDate: z.string().default(""),
   projectAddress: z.string().default(""),
@@ -196,6 +206,10 @@ export function defaultProjectInput(): ProjectInput {
   return {
     name: "Untitled Remodel",
     currency: "USD",
+    companyId: "",
+    memberIds: [],
+    investmentStrategy: "Buy-Rehab-Hold Rental",
+    profileImage: "",
 
     // Phase 2 — project management
     startDate: new Date().toISOString().slice(0, 10),

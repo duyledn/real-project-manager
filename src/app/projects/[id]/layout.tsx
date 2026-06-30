@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { use, useEffect } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Calculator,
   LayoutGrid,
   Users,
   ChevronsUpDown,
-  Building2,
-  ArrowLeft,
-  ArrowLeftRight,
+  Settings,
+  Plus,
 } from "lucide-react";
-import { useCurrency, convertProjectCurrency } from "@/lib/currency";
+import { useCurrency } from "@/lib/currency";
 import { ProjectProvider, useProjectContext } from "@/lib/projectContext";
-import { NumberInput } from "@/components/fields";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { prefetchProject } from "@/lib/useProject";
+import type { ProjectSummary } from "@/lib/types";
 
 const FINANCIALS_SUBTABS = [
   { slug: "inputs", label: "Inputs" },
@@ -25,60 +24,104 @@ const FINANCIALS_SUBTABS = [
   { slug: "report", label: "Report" },
 ];
 
-/** Header currency control. The project's stored currency is the source of
- *  truth; the display currency mirrors it. Pressing Convert rewrites every
- *  stored amount into the other currency (rounded, behind a confirm) and flips
- *  the project — the only place a conversion ever happens. */
-function CurrencyControls() {
-  const { project, setProject } = useProjectContext();
-  const { currency, setCurrency, exchangeRate, setExchangeRate } = useCurrency();
-
+/** Keeps the displayed currency mirroring the active project's stored currency.
+ *  No UI — the header currency control now lives in Project settings. */
+function CurrencySync() {
+  const { project } = useProjectContext();
+  const { setCurrency } = useCurrency();
   useEffect(() => {
     if (project) setCurrency(project.currency);
   }, [project?.currency, setCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 
-  if (!project) return null;
-  const target = currency === "USD" ? "VND" : "USD";
+/** Sidebar project switcher: clicking the up/down arrow opens a list of the
+ *  other projects to jump straight to, instead of bouncing to the landing page. */
+function ProjectSwitcher({ currentId }: { currentId: string }) {
+  const [open, setOpen] = useState(false);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  function handleConvert() {
-    const rate = exchangeRate;
-    if (!Number.isFinite(rate) || rate <= 0) {
-      window.alert("Set a valid exchange rate first.");
-      return;
-    }
-    const ok = window.confirm(
-      `Convert every amount in this project from ${currency} to ${target} at ${rate.toLocaleString("en-US")} ₫/USD? This rewrites the saved values.`,
-    );
-    if (!ok) return;
-    setProject((prev) => convertProjectCurrency(prev, target, rate));
-    setCurrency(target);
-  }
+  useEffect(() => {
+    if (!open || loaded) return;
+    fetch("/api/projects")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setProjects(d))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, [open, loaded]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="hidden sm:flex items-center gap-1.5 panel-2 px-3 py-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-ink-muted font-bold">1 USD =</span>
-        <NumberInput
-          value={exchangeRate}
-          min={1}
-          onChange={(v) => setExchangeRate(v || 25500)}
-          ariaLabel="VND per USD exchange rate"
-          className="w-20 bg-transparent font-mono text-xs text-right text-ink outline-none"
-        />
-        <span className="text-[10px] uppercase tracking-wider text-ink-muted font-bold">₫</span>
-      </div>
-      <div className="flex items-center gap-0.5 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
-        <span className="px-3 py-1.5 rounded-[10px] text-xs font-bold" style={{ background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }}>
-          {currency}
-        </span>
-        <button
-          onClick={handleConvert}
-          title={`Convert all amounts to ${target}`}
-          className="px-3 py-1.5 rounded-[10px] text-xs font-bold text-ink-muted hover:text-accent flex items-center gap-1.5 transition-colors"
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Switch project"
+        aria-label="Switch project"
+        aria-expanded={open}
+        className="text-faint hover:text-accent transition-colors"
+      >
+        <ChevronsUpDown size={18} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-2 w-[252px] p-2 z-[120]"
+          style={{
+            borderRadius: 16,
+            background: "var(--glass-strong)",
+            backdropFilter: "var(--blur)",
+            WebkitBackdropFilter: "var(--blur)",
+            border: "1px solid var(--border)",
+            borderTopColor: "var(--border-top)",
+            boxShadow: "var(--shadow-lg)",
+          }}
         >
-          <ArrowLeftRight size={13} /> To {target}
-        </button>
-      </div>
+          <div className="label-mono px-2 py-1.5">Switch project</div>
+          <div className="max-h-[300px] overflow-auto flex flex-col gap-0.5">
+            {!loaded ? (
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">Loading…</div>
+            ) : projects.length === 0 ? (
+              <div className="px-2.5 py-2 text-[12.5px] text-ink-muted">No projects yet.</div>
+            ) : (
+              projects.map((p) => {
+                const active = p.id === currentId;
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    prefetch
+                    onMouseEnter={() => prefetchProject(p.id)}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-[11px] text-[13px] font-semibold transition-colors hover:bg-[var(--accent-soft)]"
+                    style={active ? { background: "var(--accent-soft)", color: "var(--accent)" } : undefined}
+                  >
+                    <span className="truncate">{p.name}</span>
+                    {active && <span className="text-[10px] font-bold uppercase tracking-wider shrink-0">Current</span>}
+                  </Link>
+                );
+              })
+            )}
+          </div>
+          <div className="h-px my-1.5 mx-1" style={{ background: "var(--border)" }} />
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-2.5 py-2 rounded-[11px] text-[12.5px] font-bold text-accent transition-colors hover:bg-[var(--accent-soft)]"
+          >
+            <Plus size={14} /> New / all projects
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -91,13 +134,14 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
   const sub = pathname.slice(base.length).replace(/^\//, ""); // "", "inputs", "manage"…
   const inFinancials = ["inputs", "analysis", "math", "report"].includes(sub);
   const inManage = sub === "manage";
+  const inSettings = sub === "settings";
   const isDashboard = sub === "";
 
   const nav = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: base, active: isDashboard },
     { key: "financials", label: "Financials", icon: Calculator, href: `${base}/inputs`, active: inFinancials },
     { key: "jobs", label: "Jobs & Bids", icon: LayoutGrid, href: `${base}/manage`, active: inManage },
-    { key: "subs", label: "Subcontractors", icon: Users, href: `/subcontractors`, active: false },
+    { key: "subs", label: "Subcontractors", icon: Users, href: `/subcontractors?from=${id}`, active: false },
   ];
 
   const screen = isDashboard
@@ -106,7 +150,9 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
       ? { kicker: "Project finance", title: "Financials" }
       : inManage
         ? { kicker: "The hero workspace", title: "Jobs & Bids" }
-        : { kicker: "Project", title: project?.name ?? "Project" };
+        : inSettings
+          ? { kicker: "Preferences", title: "Project settings" }
+          : { kicker: "Project", title: project?.name ?? "Project" };
 
   const initials = (project?.name ?? "Project")
     .split(/\s+/)
@@ -116,42 +162,33 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
 
   return (
     <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-5 print-root">
-      {/* Global top bar */}
-      <div className="panel no-print flex items-center justify-between gap-4 px-4 py-2.5 sticky top-3 z-50 mb-5"
-        style={{ background: "var(--glass-strong)" }}>
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(150deg,var(--accent),var(--accent-2))", boxShadow: "0 6px 16px var(--accent-soft)" }}>
-            <Building2 size={20} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-extrabold text-[14.5px] tracking-tight whitespace-nowrap">Real Project Manager</div>
-            <div className="text-[11px] text-ink-muted font-medium whitespace-nowrap">Warm liquid glass</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <CurrencyControls />
-          <ThemeToggle />
-        </div>
-      </div>
+      <CurrencySync />
 
       {/* Sidebar + main */}
       <div className="flex gap-4 sm:gap-[18px] items-start">
         <aside className="panel no-print w-[244px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch" style={{ borderRadius: 26 }}>
           <div className="panel-2 flex items-center gap-3 p-[11px] mb-4">
-            <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-white font-extrabold text-[13px] shrink-0"
-              style={{ background: "linear-gradient(150deg,#7A8C5A,#9DAE6E)" }}>
-              {initials || "PR"}
-            </div>
+            {project?.profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={project.profileImage}
+                alt=""
+                className="w-9 h-9 rounded-[11px] object-cover shrink-0"
+                style={{ border: "1px solid var(--border)" }}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-white font-extrabold text-[13px] shrink-0"
+                style={{ background: "linear-gradient(150deg,#7A8C5A,#9DAE6E)" }}>
+                {initials || "PR"}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <div className="font-bold text-[13.5px] truncate">{project?.name ?? "Project"}</div>
               <div className="text-[11px] text-ink-muted font-medium">
                 {project ? `${project.holdYears}-yr hold · Active` : "Loading…"}
               </div>
             </div>
-            <Link href="/" title="All projects" className="text-faint hover:text-accent">
-              <ChevronsUpDown size={18} />
-            </Link>
+            <ProjectSwitcher currentId={id} />
           </div>
 
           <div className="label-mono px-2 pb-2">Workspace</div>
@@ -174,13 +211,18 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
             })}
           </nav>
 
-          <div className="mt-auto">
-            <div className="h-px my-3 mx-1.5" style={{ background: "var(--border)" }} />
-            <Link href="/" className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold text-ink-muted hover:text-accent transition-colors">
-              <ArrowLeft size={19} />
-              <span>All projects</span>
-            </Link>
-          </div>
+          {/* Project settings sits just below the workspace nav. */}
+          <div className="h-px my-3 mx-1.5" style={{ background: "var(--border)" }} />
+          <Link
+            href={`${base}/settings`}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] text-[13px] font-bold transition-colors"
+            style={inSettings
+              ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
+              : { color: "var(--muted)" }}
+          >
+            <Settings size={19} className={inSettings ? "text-accent" : ""} />
+            <span className="flex-1 text-left">Project settings</span>
+          </Link>
         </aside>
 
         <main className="panel flex-1 min-w-0 flex flex-col overflow-hidden self-stretch" style={{ borderRadius: 26 }}>
@@ -190,7 +232,7 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
               <div className="text-[22px] font-extrabold tracking-tight mt-0.5 truncate">{screen.title}</div>
             </div>
             <nav className="flex lg:hidden gap-1 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
-              {nav.map((item) => {
+              {[...nav, { key: "settings", label: "Project settings", icon: Settings, href: `${base}/settings`, active: inSettings }].map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link key={item.key} href={item.href} className="p-2 rounded-[10px]"

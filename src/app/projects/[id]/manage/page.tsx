@@ -12,6 +12,8 @@ import { JOB_STATUSES } from "@/lib/types";
 import type { Project, Job } from "@/lib/types";
 import { SaveIndicator, SectionHeader, TextField, DateField, DragHandle } from "@/components/fields";
 import { useDragReorder, moveItem } from "@/lib/useDragReorder";
+import { useColumnWidths } from "@/lib/useColumnWidths";
+import { ResizableTh } from "@/components/ResizableTh";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobTimeline } from "@/components/JobTimeline";
 import { JobsBidsBoard } from "@/components/JobsBidsBoard";
@@ -37,9 +39,15 @@ export default function ManagePage() {
       setSelectedJobId(jid);
     }
   }, []);
-  const jobsDrag = useDragReorder((from, to) =>
-    setProject((p) => ({ ...p, jobs: moveItem(p.jobs, from, to) })),
-  );
+  const jobsDrag = useDragReorder((from, to) => {
+    setProject((p) => ({ ...p, jobs: moveItem(p.jobs, from, to) }));
+    return to;
+  });
+
+  const { widths: jobW, startResize: jobResize } = useColumnWidths("jobs", {
+    job: 192, start: 128, end: 132, status: 176, budget: 112, approved: 200,
+  });
+  const jobsTableWidth = 28 + jobW.job + jobW.start + jobW.end + jobW.status + jobW.budget + jobW.approved + 96;
 
   // One-way auto-fill: every named remodel item is pushed into Jobs exactly
   // once (tracked by importedItemIds). Editing or deleting the resulting job
@@ -159,7 +167,7 @@ export default function ManagePage() {
             <div className="label-mono mb-2">Job Categories (shared across all projects)</div>
             <div className="flex flex-wrap gap-2 mb-3">
               {categories.map((c) => (
-                <span key={c} className="inline-flex items-center gap-1.5 border border-hair px-2.5 py-1 font-mono text-xs">
+                <span key={c} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
                   {c}
                   <button onClick={() => removeCategory(c)} className="text-ink-muted hover:text-red" aria-label={`Remove ${c}`}>
                     <X size={12} />
@@ -185,17 +193,27 @@ export default function ManagePage() {
         )}
 
         <div className="panel overflow-x-auto">
-          <table className="w-full border-collapse min-w-[680px]">
+          <table className="border-collapse" style={{ tableLayout: "fixed", width: jobsTableWidth }}>
+            <colgroup>
+              <col style={{ width: 28 }} />
+              <col style={{ width: jobW.job }} />
+              <col style={{ width: jobW.start }} />
+              <col style={{ width: jobW.end }} />
+              <col style={{ width: jobW.status }} />
+              <col style={{ width: jobW.budget }} />
+              <col style={{ width: jobW.approved }} />
+              <col style={{ width: 96 }} />
+            </colgroup>
             <thead>
               <tr className="border-b-[1.5px] border-ink">
-                <th className="w-7" />
-                <th className="text-left label-mono p-2.5 w-48">Job</th>
-                <th className="text-left label-mono p-2.5 w-32">Start</th>
-                <th className="text-left label-mono p-2.5 w-32">End <span className="normal-case opacity-70">(optional)</span></th>
-                <th className="text-left label-mono p-2.5 w-44">Status</th>
-                <th className="text-right label-mono p-2.5 w-28">Budget</th>
-                <th className="text-left label-mono p-2.5">Approved Sub / Price</th>
-                <th className="w-24" />
+                <th />
+                <ResizableTh label="Job" col="job" startResize={jobResize} />
+                <ResizableTh label="Start" col="start" startResize={jobResize} />
+                <ResizableTh label={<>End <span className="normal-case opacity-70">(optional)</span></>} col="end" startResize={jobResize} />
+                <ResizableTh label="Status" col="status" startResize={jobResize} />
+                <ResizableTh label="Budget" col="budget" startResize={jobResize} align="right" />
+                <ResizableTh label="Approved Sub / Price" col="approved" startResize={jobResize} />
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -211,8 +229,10 @@ export default function ManagePage() {
                     <tr
                       key={job.id}
                       {...jobsDrag.rowProps(idx)}
-                      className={`border-b border-hair last:border-0 ${jobsDrag.dragIndex === idx ? "opacity-40" : ""}`}
-                      style={jobsDrag.overIndex === idx && jobsDrag.dragIndex !== idx ? { boxShadow: "inset 0 2px 0 #1D4ED8" } : undefined}
+                      className={`border-b border-hair last:border-0 transition-colors ${jobsDrag.dragIndex === idx ? "" : "hover:bg-[var(--accent-soft)]"}`}
+                      style={jobsDrag.dragIndex === idx
+                        ? { background: "var(--surface-solid)", outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
+                        : undefined}
                     >
                       <td className="p-1.5 text-center align-middle">
                         <DragHandle handleProps={jobsDrag.handleProps(idx)} />
@@ -332,13 +352,27 @@ export default function ManagePage() {
 
       {/* Expanded timeline — 3/4 of the screen */}
       {timelineExpanded && (
-        <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4" onClick={() => setTimelineExpanded(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(20,12,8,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          onClick={() => setTimelineExpanded(false)}
+        >
           <div
-            className="bg-paper border-[1.5px] border-ink shadow-2xl flex flex-col"
-            style={{ width: "75vw", height: "75vh" }}
+            className="flex flex-col overflow-hidden"
+            style={{
+              width: "75vw",
+              height: "75vh",
+              borderRadius: 24,
+              background: "var(--glass-strong)",
+              backdropFilter: "var(--blur)",
+              WebkitBackdropFilter: "var(--blur)",
+              border: "1px solid var(--border)",
+              borderTopColor: "var(--border-top)",
+              boxShadow: "var(--shadow-lg)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b-[1.5px] border-ink shrink-0">
+            <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
               <div>
                 <div className="label-mono">Schedule · Timeline</div>
                 <h2 className="font-display font-extrabold text-xl leading-none mt-0.5">{project.name}</h2>

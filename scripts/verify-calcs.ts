@@ -43,6 +43,10 @@ const proj: Project = {
   createdAt: "",
   updatedAt: "",
   currency: "USD",
+  companyId: "",
+  memberIds: [],
+  investmentStrategy: "Buy-Rehab-Hold Rental",
+  profileImage: "",
 
   // Phase 2 meta — not exercised by these calculation tests.
   startDate: "",

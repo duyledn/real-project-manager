@@ -350,18 +350,20 @@ export function ToggleField({
   return (
     <label className="flex flex-col gap-1.5">
       <span className="label-mono">{label}</span>
-      <span className="flex border-[1.5px] border-hair">
+      <span className="flex gap-1 p-1 rounded-[12px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
         <button
           type="button"
           onClick={() => onChange(true)}
-          className={`flex-1 font-mono text-xs uppercase py-1.5 transition-colors ${value ? "bg-blueprint text-panel" : "text-ink-muted hover:bg-paper"}`}
+          className="flex-1 text-[11.5px] font-bold py-1.5 rounded-[8px] transition-colors"
+          style={value ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" } : { color: "var(--muted)" }}
         >
           {trueLabel}
         </button>
         <button
           type="button"
           onClick={() => onChange(false)}
-          className={`flex-1 font-mono text-xs uppercase py-1.5 transition-colors ${!value ? "bg-blueprint text-panel" : "text-ink-muted hover:bg-paper"}`}
+          className="flex-1 text-[11.5px] font-bold py-1.5 rounded-[8px] transition-colors"
+          style={!value ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" } : { color: "var(--muted)" }}
         >
           {falseLabel}
         </button>

@@ -10,6 +10,51 @@
  *  amount in place and flips this flag — values are never converted on input. */
 export type Currency = "USD" | "VND";
 
+// ---------------------------------------------------------------------------
+// Accounts, companies & collaboration
+// ---------------------------------------------------------------------------
+
+/** "god" is the single overarching admin with complete control; everyone else
+ *  is a regular "user" (who may own companies and be assigned to projects). */
+export type Role = "god" | "user";
+
+export interface User {
+  id: string;
+  /** Unique handle, stored lowercase without the leading "@". */
+  tag: string;
+  username: string;
+  /** Salted hash ("salt:hash"). Internal tool — not hardened. */
+  password: string;
+  /** 6-digit recovery PIN (stored hashed like the password). */
+  pin: string;
+  role: Role;
+  /** Avatar data URL ("" = initials fallback). */
+  avatar: string;
+  createdAt: string;
+}
+
+/** Public-safe view of a user (never leaks password/pin). */
+export interface PublicUser {
+  id: string;
+  tag: string;
+  username: string;
+  role: Role;
+  avatar: string;
+}
+
+/** A company workspace. Projects belong to exactly one company. The owner has
+ *  full control; members get edit (not delete) on assigned projects. */
+export interface Company {
+  id: string;
+  name: string;
+  ownerId: string;
+  /** User ids added to the company by the owner. */
+  memberIds: string[];
+  createdAt: string;
+}
+
+export type CompanyInput = { name: string };
+
 export interface RenovationItem {
   id: string;
   description: string;
@@ -182,6 +227,17 @@ export interface Project {
   /** Currency the figures below are stored in. Changed only via Convert. */
   currency: Currency;
 
+  /** The company workspace this project belongs to. */
+  companyId: string;
+  /** Users (besides the company owner) assigned edit access to this project. */
+  memberIds: string[];
+
+  /** Headline investment strategy label (e.g. "Buy-Rehab-Hold Rental").
+   *  Presentational only — does not affect the calculation engine. */
+  investmentStrategy: string;
+  /** Optional project avatar, stored as a data URL (base64). "" = none. */
+  profileImage: string;
+
   // Phase 2 — project management meta
   startDate: string;
   projectAddress: string;
@@ -253,6 +309,13 @@ export interface ProjectSummary {
   holdYears: number;
   totalRenovationCost: number;
   netProfit: number;
+  companyId: string;
+  /** Assigned member user ids (excludes the company owner). */
+  memberIds: string[];
+  /** Number of people with access (owner + assigned members). */
+  memberCount: number;
+  /** Whether the requesting user may delete it (owner/god). */
+  canDelete: boolean;
 }
 
 export interface AmortizationMonth {
