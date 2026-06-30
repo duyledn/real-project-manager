@@ -3,72 +3,216 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { useProjectContext } from "@/lib/projectContext";
-import { SaveIndicator } from "@/components/fields";
-import { JobTimeline } from "@/components/JobTimeline";
-import type { Project, Job } from "@/lib/types";
 
-/** Scheduling — the project timeline (Gantt) for every job, pulled straight
- *  from the Jobs & Bids data. Recoloring a bar autosaves; clicking a job opens
- *  it back on the Jobs & Bids tab. */
+import { SaveIndicator } from "@/components/fields";
+import JobTimeline from "@/components/JobTimeline";
+import { makeId } from "@/lib/defaults";
+import { useJobCategories } from "@/lib/useJobCategories";
+import { useProjectContext } from "@/lib/projectContext";
+import type { Project } from "@/lib/types";
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type QuickAddPopoverProps = {
+  categories: string[];
+  category: string;
+  startDate: string;
+  endDate: string;
+  onCategoryChange: (value: string) => void;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onClose: () => void;
+  onSave: () => void;
+};
+
+function QuickAddPopover({
+  categories,
+  category,
+  startDate,
+  endDate,
+  onCategoryChange,
+  onStartDateChange,
+  onEndDateChange,
+  onClose,
+  onSave,
+}: QuickAddPopoverProps) {
+  const options = Array.from(new Set([category, ...categories].filter(Boolean)));
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close add phase"
+        className="fixed inset-0 z-40 cursor-default bg-transparent"
+        onClick={onClose}
+      />
+      <div
+        className="absolute right-5 top-[78px] z-50 w-[min(340px,calc(100vw-40px))] rounded-[22px] border p-4 shadow-[0_28px_80px_rgba(0,0,0,0.34)]"
+        style={{
+          background: "var(--glass-strong)",
+          backdropFilter: "var(--blur)",
+          borderColor: "var(--line)",
+          borderTopColor: "var(--line-strong)",
+        }}
+      >
+        <div className="space-y-3">
+          <label className="block">
+            <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+              Phase
+            </span>
+            <select className="field-input h-11 w-full" value={category} onChange={(event) => onCategoryChange(event.target.value)}>
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                Start
+              </span>
+              <input
+                className="field-input h-11 w-full"
+                type="date"
+                value={startDate}
+                onChange={(event) => onStartDateChange(event.target.value)}
+              />
+            </label>
+            <label className="block">
+              <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                End
+              </span>
+              <input
+                className="field-input h-11 w-full"
+                type="date"
+                min={startDate || undefined}
+                value={endDate}
+                onChange={(event) => onEndDateChange(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button type="button" className="btn h-10 px-4" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="btn btn-blue h-10 px-4" onClick={onSave}>
+              Add phase
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function SchedulingPage() {
   const { project, setProject, loading, error, saveState } = useProjectContext();
   const router = useRouter();
+  const { categories } = useJobCategories();
   const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickCategory, setQuickCategory] = useState("");
+  const [quickStartDate, setQuickStartDate] = useState("");
+  const [quickEndDate, setQuickEndDate] = useState("");
 
-  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
+  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading...</div>;
   if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
   if (!project) return null;
 
   const base = `/projects/${project.id}`;
+  const defaultStartDate = project.startDate || todayIso();
+  const searchTerm = search.trim().toLowerCase();
+  const filteredJobs = searchTerm
+    ? project.jobs.filter((job) => job.category.toLowerCase().includes(searchTerm))
+    : project.jobs;
 
-  function updateJob(jobId: string, updater: (j: Job) => Job) {
-    setProject((p: Project) => ({ ...p, jobs: p.jobs.map((j) => (j.id === jobId ? updater(j) : j)) }));
+  function openInJobs(jobId: string) {
+    router.push(`${base}/manage?job=${jobId}`);
   }
-  // Selecting a job sends you to Jobs & Bids with that job's drawer open.
-  const openInJobs = (jobId: string) => router.push(`${base}/manage?job=${jobId}`);
+
+  function openQuickAdd() {
+    setQuickCategory(categories[0] ?? "Designing");
+    setQuickStartDate(defaultStartDate);
+    setQuickEndDate("");
+    setQuickAddOpen(true);
+  }
+
+  function saveQuickAdd() {
+    setProject((currentProject: Project) => ({
+      ...currentProject,
+      jobs: [
+        ...currentProject.jobs,
+        {
+          id: makeId(),
+          category: quickCategory || categories[0] || "Designing",
+          startDate: quickStartDate || currentProject.startDate || todayIso(),
+          endDate: quickEndDate,
+          status: "N/A",
+          approvedBidderId: null,
+          color: "",
+          estimatedCost: 0,
+          sourceItemId: "",
+          bidders: [],
+        },
+      ],
+    }));
+    setQuickAddOpen(false);
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Intro + save status */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display font-extrabold text-2xl leading-none">Scheduling</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">
-            Every job positioned by its start and (optional) end date — pulled live from Jobs &amp; Bids. Recolor a
-            bar here, or click one to open it on the Jobs &amp; Bids tab.
-          </p>
+    <>
+      <main className="space-y-5">
+        <div className="flex justify-end">
+          <div className="flex items-center gap-2.5">
+            <SaveIndicator state={saveState} />
+            {project.jobs.length > 0 && (
+              <button type="button" className="btn h-10 gap-2 px-4" onClick={() => setExpanded(true)}>
+                <Maximize2 size={16} />
+                Expand
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <SaveIndicator state={saveState} />
-          {project.jobs.length > 0 && (
-            <button onClick={() => setExpanded(true)} className="btn inline-flex items-center gap-1.5 shrink-0">
-              <Maximize2 size={14} /> Expand
-            </button>
+
+        <div className="relative">
+          <JobTimeline
+            jobs={filteredJobs}
+            selectedJobId={null}
+            onSelect={openInJobs}
+            onAddJob={openQuickAdd}
+            onColorChange={(jobId, color) =>
+              setProject((currentProject: Project) => ({
+                ...currentProject,
+                jobs: currentProject.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
+              }))
+            }
+            searchValue={search}
+            onSearchChange={setSearch}
+          />
+
+          {quickAddOpen && (
+            <QuickAddPopover
+              categories={categories}
+              category={quickCategory}
+              startDate={quickStartDate}
+              endDate={quickEndDate}
+              onCategoryChange={setQuickCategory}
+              onStartDateChange={setQuickStartDate}
+              onEndDateChange={setQuickEndDate}
+              onClose={() => setQuickAddOpen(false)}
+              onSave={saveQuickAdd}
+            />
           )}
         </div>
-      </div>
+      </main>
 
-      {project.jobs.length === 0 ? (
-        <div className="panel p-8 text-center">
-          <p className="text-sm text-ink-muted">
-            No jobs yet. Add construction scopes on the{" "}
-            <button onClick={() => router.push(`${base}/manage`)} className="text-accent font-bold underline-offset-2 hover:underline">
-              Jobs &amp; Bids
-            </button>{" "}
-            tab and they&rsquo;ll appear here on the timeline.
-          </p>
-        </div>
-      ) : (
-        <JobTimeline
-          jobs={project.jobs}
-          selectedJobId={null}
-          onSelect={openInJobs}
-          onColorChange={(jobId, color) => updateJob(jobId, (j) => ({ ...j, color }))}
-        />
-      )}
-
-      {/* Expanded timeline — 3/4 of the screen */}
       {expanded && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -88,28 +232,36 @@ export default function SchedulingPage() {
               borderTopColor: "var(--border-top)",
               boxShadow: "var(--shadow-lg)",
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
               <div>
-                <div className="label-mono">Scheduling · Timeline</div>
+                <div className="label-mono">Schedule / Timeline</div>
                 <h2 className="font-display font-extrabold text-xl leading-none mt-0.5">{project.name}</h2>
               </div>
-              <button onClick={() => setExpanded(false)} className="btn inline-flex items-center gap-1.5">
-                <Minimize2 size={14} /> Close
+              <button type="button" className="btn inline-flex items-center gap-1.5" onClick={() => setExpanded(false)}>
+                <Minimize2 size={14} />
+                Close
               </button>
             </div>
             <div className="flex-1 overflow-auto p-5">
               <JobTimeline
-                jobs={project.jobs}
+                jobs={filteredJobs}
                 selectedJobId={null}
                 onSelect={openInJobs}
-                onColorChange={(jobId, color) => updateJob(jobId, (j) => ({ ...j, color }))}
+                onColorChange={(jobId, color) =>
+                  setProject((currentProject: Project) => ({
+                    ...currentProject,
+                    jobs: currentProject.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
+                  }))
+                }
+                searchValue={search}
+                onSearchChange={setSearch}
               />
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

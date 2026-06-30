@@ -1,7 +1,7 @@
 # Current Tasks
 
 ## Active
-- (none)
+- Schedule page redesign + sidebar max-height fix - Status: needs-handoff - Handoff: `LLM/handoffs/schedule-redesign.md` - Context: `LLM/context/schedule-redesign.md`
 
 <!--
 Keep Active tasks minimal. Prefer ONE active "current" task at a time.

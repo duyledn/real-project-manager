@@ -170,7 +170,7 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
       active: inManage,
       badge: pendingBids || undefined,
     },
-    { key: "scheduling", label: "Scheduling", icon: CalendarRange, href: `${base}/scheduling`, active: inScheduling },
+    { key: "scheduling", label: "Schedule", icon: CalendarRange, href: `${base}/scheduling`, active: inScheduling },
     { key: "files", label: "Files", icon: FolderOpen, href: `${base}/files`, active: inFiles },
   ];
 
@@ -192,7 +192,7 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
       : inManage
         ? { kicker: t("The hero workspace"), title: t("Jobs & Bids") }
         : inScheduling
-          ? { kicker: t("Timeline"), title: t("Scheduling") }
+          ? { kicker: t("Timeline"), title: t("Schedule") }
           : inFiles
             ? { kicker: t("Workspace"), title: t("Files") }
             : inSettings
@@ -211,7 +211,10 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
 
       {/* Sidebar + main */}
       <div className="flex gap-4 sm:gap-[18px] items-start">
-        <aside className="panel no-print w-[244px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch" style={{ borderRadius: 26 }}>
+        <aside
+          className="panel no-print w-[244px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch"
+          style={{ borderRadius: 26, position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}
+        >
           <div className="panel-2 flex items-center gap-3 p-[11px] mb-4">
             {project?.profileImage ? (
               // eslint-disable-next-line @next/next/no-img-element
