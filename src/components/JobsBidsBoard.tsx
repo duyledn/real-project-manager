@@ -273,9 +273,9 @@ function KanbanView({
       ) : (
         <>
           <div className="flex items-center gap-2 mb-3 text-xs text-ink-muted">
-            <GripVertical size={15} /> Drag a bid card across columns to update its status.
+            <GripVertical size={15} /> Drag bid cards between lanes to update their status.
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2.5">
+          <div className="flex flex-col gap-[11px]">
             {BIDDER_STATUSES.map((status) => {
               const bids = selectedJob.bidders.filter((b) => b.status === status);
               const color = bidStatusColor(status);
@@ -292,22 +292,60 @@ function KanbanView({
                     e.preventDefault();
                     onDropTo(e, status);
                   }}
-                  className="shrink-0 w-[214px] rounded-[16px] p-2.5"
                   style={{
-                    background: isOver ? hexAlpha(color, 0.1) : "var(--glass-2)",
-                    border: `1px solid ${isOver ? color : "var(--border)"}`,
-                    transition: "background .2s, border-color .2s",
+                    borderRadius: 16,
+                    padding: "12px 14px",
+                    background: isOver ? "var(--accent-soft)" : "var(--glass-2)",
+                    border: `1px solid ${isOver ? "var(--accent)" : "var(--border)"}`,
+                    borderLeft: `3px solid ${isOver ? "var(--accent)" : color}`,
+                    boxShadow: isOver ? "inset 0 0 0 1px var(--accent)" : undefined,
+                    transition: "background 0.18s, border-color 0.18s",
                   }}
                 >
-                  <div className="flex items-center gap-2 px-1 pb-3">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                    <span className="text-[12.5px] font-bold flex-1">{BID_STATUS_SHORT[status]}</span>
-                    <span className="text-[11px] font-bold text-ink-muted px-2 py-0.5 rounded-full" style={{ background: "var(--glass)" }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        background: color,
+                        boxShadow: `0 0 0 3px ${hexAlpha(color, 0.13)}`,
+                      }}
+                    />
+                    <span className="text-[13px] font-extrabold">{BID_STATUS_SHORT[status]}</span>
+                    <span
+                      className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: "var(--glass)", color: "var(--muted)", border: "1px solid var(--border)" }}
+                    >
                       {bids.length}
                     </span>
+                    <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
                   </div>
-                  <div className="flex flex-col gap-2.5 min-h-[60px]">
-                    {bids.map((b) => {
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(212px, 1fr))",
+                      gap: 9,
+                      minHeight: 46,
+                    }}
+                  >
+                    {bids.length === 0 ? (
+                      <div
+                        style={{
+                          gridColumn: "1 / -1",
+                          border: "1.5px dashed var(--border)",
+                          borderRadius: 10,
+                          padding: "12px 0",
+                          textAlign: "center",
+                          fontSize: 12,
+                          color: "var(--faint)",
+                        }}
+                      >
+                        Drag a bid here
+                      </div>
+                    ) : (
+                    bids.map((b) => {
                       const sub = subById(b.subcontractorId);
                       const comp = subCompliance(sub);
                       return (
@@ -315,67 +353,62 @@ function KanbanView({
                           key={b.id}
                           draggable
                           onDragStart={(e) => onDragStart(e, selectedJob.id, b.id)}
-                          className="rounded-[13px] p-3 cursor-grab active:cursor-grabbing"
+                          className="hover:-translate-y-0.5 hover:shadow-lg"
                           style={{
+                            borderRadius: 13,
+                            padding: 12,
                             background: "var(--surface-solid)",
                             border: "1px solid var(--border)",
-                            borderTopColor: "var(--border-top)",
+                            borderLeft: `3px solid ${color}`,
                             boxShadow: "var(--shadow)",
                             opacity: dragBidId === b.id ? 0.4 : 1,
+                            cursor: "grab",
+                            transition: "box-shadow 0.2s, transform 0.2s",
                           }}
                         >
-                          <div className="flex items-start justify-between gap-2 mb-2.5">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div
-                                className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center text-[11px] font-extrabold text-accent shrink-0"
-                                style={{ background: "var(--accent-soft)" }}
-                              >
-                                {initialsOf(sub?.companyName ?? "—")}
+                          <div className="flex items-start gap-2.5">
+                            <div
+                              className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center text-[10.5px] font-extrabold text-accent shrink-0"
+                              style={{ background: "var(--accent-soft)" }}
+                            >
+                              {initialsOf(sub?.companyName ?? "-")}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12.5px] font-bold truncate" style={{ maxWidth: 130 }}>
+                                {sub?.companyName ?? "Unassigned"}
                               </div>
-                              <div className="min-w-0">
-                                <div className="text-[12.5px] font-bold truncate max-w-[110px]">
-                                  {sub?.companyName ?? "Unassigned"}
-                                </div>
-                                <div className="text-[10.5px] text-ink-muted truncate max-w-[110px]">
-                                  {sub?.representativeName || "—"}
-                                </div>
+                              <div className="text-[10.5px] text-ink-muted truncate">
+                                {sub?.representativeName || "-"}
                               </div>
                             </div>
-                            <GripVertical size={15} className="text-faint shrink-0" />
+                            <GripVertical size={14} className="text-faint shrink-0 mt-0.5" />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="font-mono font-semibold text-[14px]">{fmtMoney(b.bidPrice)}</div>
+                          <div className="flex items-center justify-between mt-2.5 gap-2">
+                            <span className="font-mono text-[14px] font-semibold">{fmtMoney(b.bidPrice)}</span>
                             <div className="flex items-center gap-1.5">
                               {b.bidLink && (
                                 <a
                                   href={b.bidLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[10px] text-ink-muted px-1.5 py-1 rounded-md"
-                                  style={{ background: "var(--glass)" }}
+                                  className="text-[10.5px] font-bold px-2 py-0.5 rounded-full"
+                                  style={{ background: "var(--glass)", color: "var(--muted)", border: "1px solid var(--border)" }}
                                   title="Open bid document"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <FileText size={12} /> PDF
+                                  PDF
                                 </a>
                               )}
                               {comp.ok ? (
-                                <CheckCircle2 size={16} className="text-green" />
+                                <CheckCircle2 size={14} style={{ color: "#3E8E5A" }} />
                               ) : (
-                                <AlertCircle size={16} style={{ color: "var(--warn)" }} />
+                                <AlertCircle size={14} style={{ color: "#C98A2E" }} />
                               )}
                             </div>
                           </div>
                         </div>
                       );
-                    })}
-                    {bids.length === 0 && (
-                      <div
-                        className="text-[11px] text-faint text-center py-3.5 rounded-[12px]"
-                        style={{ border: "1px dashed var(--border)" }}
-                      >
-                        Drop here
-                      </div>
+                    })
                     )}
                   </div>
                 </div>

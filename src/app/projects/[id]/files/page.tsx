@@ -278,7 +278,7 @@ export default function FilesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
+        <div className="panel overflow-hidden">
           {/* Folders */}
           {folders.map((f) => {
             const Icon = Folder;
@@ -291,21 +291,26 @@ export default function FilesPage() {
                 onDragEnd={() => { setDragId(null); setDropTarget(null); }}
                 {...dropCardProps(f.id)}
                 onDoubleClick={() => setFolderId(f.id)}
-                className="panel-2 p-3.5 relative group cursor-pointer transition-all"
+                className="relative group cursor-pointer transition-all border-b border-hair last:border-0 hover:bg-[var(--glass-2)]"
                 style={{
                   ...(isDrop ? { outline: "2px solid var(--accent)", background: "var(--accent-soft)" } : {}),
                   ...(dragId === f.id ? { opacity: 0.4 } : {}),
                 }}
               >
-                <div className="flex items-center gap-2.5">
-                  <Icon size={26} className="text-accent shrink-0" style={{ fill: "var(--accent-soft)" }} />
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div
+                    className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] text-accent shrink-0"
+                    style={{ background: "var(--accent-soft)", border: "1px solid var(--border)" }}
+                  >
+                    <Icon size={21} style={{ fill: "var(--accent-soft)" }} />
+                  </div>
                   <div className="min-w-0 flex-1">
                     {renamingId === f.id ? (
                       <RenameInput value={renameValue} onChange={setRenameValue} onCommit={commitRename} onCancel={() => setRenamingId(null)} />
                     ) : (
                       <>
                         <div className="text-[13px] font-bold truncate" title={f.name}>{f.name}</div>
-                        <div className="text-[11px] text-ink-muted">Folder</div>
+                        <div className="text-[11.5px] text-ink-muted">Folder - double-click to open</div>
                       </>
                     )}
                   </div>
@@ -323,7 +328,6 @@ export default function FilesPage() {
           {/* Files */}
           {files.map((f) => {
             const Icon = fileIconFor(f);
-            const isImage = (f.mime || "").startsWith("image/");
             return (
               <div
                 key={f.id}
@@ -331,28 +335,35 @@ export default function FilesPage() {
                 onDragStart={() => setDragId(f.id)}
                 onDragEnd={() => { setDragId(null); setDropTarget(null); }}
                 onDoubleClick={() => download(f)}
-                className="panel-2 p-3.5 relative group transition-all"
+                className="relative group transition-all border-b border-hair last:border-0 hover:bg-[var(--glass-2)]"
                 style={dragId === f.id ? { opacity: 0.4 } : undefined}
               >
-                <div className="rounded-[12px] h-24 mb-3 flex items-center justify-center overflow-hidden" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
-                  {isImage && f.dataUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={f.dataUrl} alt={f.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Icon size={34} className="text-accent" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div
+                    className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] text-accent shrink-0"
+                    style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}
+                  >
+                    <Icon size={20} />
+                  </div>
                   <div className="min-w-0 flex-1">
                     {renamingId === f.id ? (
                       <RenameInput value={renameValue} onChange={setRenameValue} onCommit={commitRename} onCancel={() => setRenamingId(null)} />
                     ) : (
                       <>
                         <div className="text-[13px] font-bold truncate" title={f.name}>{f.name}</div>
-                        <div className="text-[11px] text-ink-muted font-mono">{formatBytes(f.size)}</div>
+                        <div className="text-[11.5px] text-ink-muted truncate">File - ready to download</div>
                       </>
                     )}
                   </div>
+                  <div className="font-mono text-[11.5px] text-ink-muted shrink-0">{formatBytes(f.size)}</div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); download(f); }}
+                    className="icon-btn !w-8 !h-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                    aria-label={`Download ${f.name}`}
+                  >
+                    <Download size={14} />
+                  </button>
                   <ItemMenu
                     open={menuId === f.id}
                     onToggle={(e) => { e.stopPropagation(); setMenuId((m) => (m === f.id ? null : f.id)); }}

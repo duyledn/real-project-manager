@@ -196,7 +196,10 @@ function SubRow({
 
   return (
     <>
-      <tr className="border-b border-hair transition-colors hover:bg-[var(--accent-soft)]">
+      <tr
+        className="border-b border-hair transition-colors hover:bg-[var(--glass-2)]"
+        style={{ background: open ? "var(--glass-2)" : undefined }}
+      >
         <td className="p-1.5 text-center">
           <button onClick={onToggle} className="icon-btn" aria-label="Toggle details">
             <ChevronDown size={15} className={`transition-transform ${open ? "" : "-rotate-90"}`} />
@@ -204,7 +207,10 @@ function SubRow({
         </td>
         <td className="p-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-[11px] font-extrabold text-accent shrink-0" style={{ background: "var(--accent-soft)" }}>
+            <div
+              className="w-12 h-12 rounded-[14px] flex items-center justify-center text-[13px] font-extrabold text-accent shrink-0"
+              style={{ background: "var(--accent-soft)", border: "1px solid var(--border)" }}
+            >
               {initialsOf(form.companyName || "?")}
             </div>
             <input
@@ -252,6 +258,10 @@ function SubRow({
         <tr style={{ background: "var(--glass-2)" }}>
           <td />
           <td colSpan={7} className="px-4 pb-5 pt-1">
+            <div
+              className="rounded-[18px] p-4"
+              style={{ background: "var(--surface-solid)", border: "1px solid var(--border)", boxShadow: "var(--shadow)" }}
+            >
             <div className="grid sm:grid-cols-3 gap-4 mb-4">
               <DetailField label="Worker's Comp" value={form.workersComp} onChange={(v) => patch("workersComp", v)} placeholder="Link or expiry date" ok={!!form.workersComp.trim()} />
               <DetailField label="W-9" value={form.w9} onChange={(v) => patch("w9", v)} placeholder="Link or status" ok={!!form.w9.trim()} />
@@ -280,6 +290,7 @@ function SubRow({
                 ))}
               </div>
             )}
+            </div>
           </td>
         </tr>
       )}

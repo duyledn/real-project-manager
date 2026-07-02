@@ -6,6 +6,7 @@ import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
 import { totalRenovationCost, annualRoomRevenue, analyzeProject } from "@/lib/calculations";
 import { fmtPercent, fmtMultiple } from "@/lib/format";
+import { KPI_COLORS } from "@/lib/palette";
 import { useCurrency } from "@/lib/currency";
 import { NumberField, MoneyInput, MoneyField, currencySymbol, ToggleField, SaveIndicator, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
 import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
@@ -63,17 +64,30 @@ export default function InvestmentPage() {
             { label: "Equity multiple", value: fmtMultiple(analysis.returns.equityMultiple), tone: "text" },
             { label: "Cash-on-cash · Yr 1", value: fmtPercent(analysis.returns.cashOnCashYear1), tone: "text" },
             { label: "Cap rate · Yr 1", value: fmtPercent(analysis.returns.capRateYear1), tone: "text" },
-          ].map((k) => (
-            <div key={k.label} className="panel-2 p-[18px]">
+          ].map((k, i) => {
+            const color = KPI_COLORS[i] ?? KPI_COLORS[0];
+            const valueColor = k.tone === "neg" ? "var(--neg)" : color;
+            return (
+            <div
+              key={k.label}
+              className="panel-2"
+              style={{
+                background: `linear-gradient(155deg, ${color}1E, var(--glass-2) 62%)`,
+                border: "1px solid var(--border)",
+                borderTopColor: "var(--border-top)",
+                borderRadius: 18,
+                padding: 18,
+              }}
+            >
               <div className="text-xs text-ink-muted font-semibold">{k.label}</div>
               <div
                 className="font-mono text-[27px] font-extrabold tracking-tight mt-2"
-                style={{ color: k.tone === "pos" ? "var(--pos)" : k.tone === "neg" ? "var(--neg)" : "var(--text)" }}
+                style={{ color: valueColor }}
               >
                 {k.value}
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
 

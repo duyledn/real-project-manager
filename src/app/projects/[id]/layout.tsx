@@ -212,7 +212,7 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
       {/* Sidebar + main */}
       <div className="flex gap-4 sm:gap-[18px] items-start">
         <aside
-          className="panel no-print w-[244px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch"
+          className="panel no-print w-[252px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch"
           style={{ borderRadius: 26, position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}
         >
           <div className="panel-2 flex items-center gap-3 p-[11px] mb-4">
