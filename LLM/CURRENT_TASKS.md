@@ -3,6 +3,7 @@
 ## Active
 - Schedule page redesign + sidebar max-height fix - Status: needs-handoff - Handoff: `LLM/handoffs/schedule-redesign.md` - Context: `LLM/context/schedule-redesign.md`
 - Global visual redesign ("Verdant Glass") - Status: needs-handoff - Handoff: `LLM/handoffs/global-redesign.md` - Context: `LLM/context/global-redesign.md`
+- UX polish batch (glass + 9 schedule/date tasks) - Status: needs-handoff - Handoff: `LLM/handoffs/ux-polish.md` - Context: `LLM/context/ux-polish.md`
 
 <!--
 Keep Active tasks minimal. Prefer ONE active "current" task at a time.

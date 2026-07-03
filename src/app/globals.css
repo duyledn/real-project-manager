@@ -12,8 +12,8 @@
    =========================================================================== */
 :root {
   --app-bg: linear-gradient(165deg, #FAF4EC 0%, #F3E9DD 55%, #EFE2D6 100%);
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-2: rgba(255, 255, 255, 0.40);
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-2: rgba(255, 255, 255, 0.58);
   --glass-strong: rgba(255, 255, 255, 0.74);
   --seg-active: #FFFFFF;
   --surface-solid: #FFFFFF;
@@ -38,8 +38,8 @@
 
 [data-theme="dark"] {
   --app-bg: linear-gradient(165deg, #1E1813 0%, #181310 55%, #140F0C 100%);
-  --glass: rgba(44, 37, 32, 0.55);
-  --glass-2: rgba(44, 37, 32, 0.38);
+  --glass: rgba(44, 37, 32, 0.72);
+  --glass-2: rgba(44, 37, 32, 0.58);
   --glass-strong: rgba(52, 44, 38, 0.74);
   --seg-active: rgba(255, 255, 255, 0.12);
   --surface-solid: #2A231E;
@@ -143,6 +143,28 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
     background: var(--surface-solid);
+  }
+
+  /* Force a consistent light-mode calendar popup on all platforms. */
+  .field-input[type="date"],
+  .field-input[type="datetime-local"] {
+    color-scheme: light;
+  }
+
+  /* Tint the picker-open icon to the app's accent color. */
+  .field-input[type="date"]::-webkit-calendar-picker-indicator,
+  .field-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px;
+    opacity: 0.7;
+    filter: invert(36%) sepia(60%) saturate(600%) hue-rotate(120deg) brightness(85%);
+    /* The filter approximates --accent (#1F8A5B) from a neutral grey base. */
+    transition: opacity 0.15s;
+  }
+  .field-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  .field-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
   }
 
   .cell-input {

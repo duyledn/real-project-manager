@@ -7,13 +7,16 @@ import {
   Home,
   Layers,
   LayoutGrid,
+  Maximize2,
   Plus,
   Search,
   Wrench,
   Zap,
 } from "lucide-react";
+import { SaveIndicator } from "@/components/fields";
 import { JOB_COLOR_PALETTE, contrastText } from "@/lib/jobs";
 import type { Job, JobStatus } from "@/lib/types";
+import type { SaveState } from "@/components/fields";
 
 /** Status -> bar fill in the warm "estate" palette, progressing as a job
  *  advances. Vivid enough to read on both light and dark surfaces. */
@@ -120,7 +123,9 @@ type JobTimelineProps = {
   jobs: Job[];
   selectedJobId: string | null;
   onSelect: (id: string) => void;
-  onAddJob?: () => void;
+  saveState?: SaveState;
+  onExpand?: () => void;
+  onHoverAdd?: (category: string) => void;
   onColorChange?: (jobId: string, color: string) => void;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
@@ -130,7 +135,9 @@ export function JobTimeline({
   jobs,
   selectedJobId,
   onSelect,
-  onAddJob,
+  saveState,
+  onExpand,
+  onHoverAdd,
   onColorChange,
   searchValue = "",
   onSearchChange,
@@ -169,11 +176,18 @@ export function JobTimeline({
           className="w-full bg-transparent outline-none text-[13px] font-semibold text-ink placeholder:text-ink-muted"
         />
       </div>
-      {onAddJob && (
-        <button type="button" onClick={onAddJob} className="btn btn-blue inline-flex items-center gap-1.5 shrink-0 !py-2.5">
-          <Plus size={15} /> Add phase
-        </button>
-      )}
+      <div className="flex items-center gap-2 shrink-0">
+        {saveState && <SaveIndicator state={saveState} />}
+        {onExpand && (
+          <button
+            type="button"
+            className="btn h-9 gap-1.5 px-3 inline-flex items-center"
+            onClick={onExpand}
+          >
+            <Maximize2 size={14} /> Expand
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -225,7 +239,7 @@ export function JobTimeline({
               </div>
             )}
 
-            {jobs.map((job, index) => {
+            {jobs.map((job) => {
               const Icon = phaseIconOf(job.category);
               const start = parseDate(job.startDate);
               const end = parseDate(job.endDate);
@@ -244,11 +258,16 @@ export function JobTimeline({
                   tabIndex={0}
                   onClick={() => onSelect(job.id)}
                   onKeyDown={(e) => rowKeyDown(e, job.id)}
-                  className="group grid items-center rounded-[18px] transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] hover:bg-[var(--glass-2)]"
+                  className="group grid items-center rounded-[12px] transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                   style={{
                     gridTemplateColumns: `${LABEL_COL_W}px minmax(0,1fr)`,
                     minHeight: ROW_H,
-                    background: isSelected ? "var(--accent-soft)" : index % 2 ? "rgba(255,255,255,0.13)" : "transparent",
+                    background: isSelected
+                      ? "var(--accent-soft)"
+                      : "var(--surface-solid)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    marginBottom: 4,
                   }}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
@@ -268,11 +287,24 @@ export function JobTimeline({
                     >
                       <Icon size={16} />
                     </button>
-                    <span className="text-[13px] font-extrabold truncate">{job.category}</span>
+                    <div className="relative flex-1 min-w-0 group/label">
+                      <span className="text-[13px] font-extrabold truncate block">{job.category}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onHoverAdd?.(job.category);
+                        }}
+                        className="absolute -bottom-3 left-0 z-10 opacity-0 group-hover/label:opacity-100 flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10.5px] font-bold text-accent bg-[var(--accent-soft)] transition-opacity"
+                        tabIndex={-1}
+                        aria-label={`Add phase below ${job.category}`}
+                      >
+                        <Plus size={11} /> Add below
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative h-11">
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px]" style={{ background: "var(--border)" }} />
                     {start == null ? (
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-muted">
                         No date
@@ -292,13 +324,16 @@ export function JobTimeline({
                       </>
                     ) : (
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 h-10 rounded-full flex items-center justify-center px-4 text-[12.5px] font-extrabold shadow-sm"
+                        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center px-3 text-[12px] font-extrabold"
                         style={{
                           left: `${startPct}%`,
                           width: `max(${widthPct}%, 48px)`,
                           maxWidth: `${Math.max(0, 100 - startPct)}%`,
+                          height: 28,
+                          borderRadius: 8,
                           background: barColor,
                           color: textColor,
+                          boxShadow: "0 3px 10px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.10)",
                         }}
                       >
                         <span className="truncate">{monthRangeLabel(start, safeEnd)}</span>
@@ -308,6 +343,20 @@ export function JobTimeline({
                 </div>
               );
             })}
+
+            {onHoverAdd && (
+              <button
+                type="button"
+                onClick={() => onHoverAdd?.("")}
+                className="w-full mt-2 flex items-center gap-2 px-4 rounded-[12px] text-[12.5px] font-bold text-ink-muted transition-colors hover:text-accent hover:bg-[var(--accent-soft)]"
+                style={{
+                  height: 40,
+                  border: "1.5px dashed var(--border)",
+                }}
+              >
+                <Plus size={15} /> Add phase
+              </button>
+            )}
 
             {pickerJob && onColorChange && (
               <>

@@ -206,7 +206,9 @@ export function DragHandle({ handleProps }: { handleProps: DragHandleProps }) {
   );
 }
 
-export function SaveIndicator({ state }: { state: "idle" | "saving" | "saved" | "error" }) {
+export type SaveState = "idle" | "saving" | "saved" | "error";
+
+export function SaveIndicator({ state }: { state: SaveState }) {
   const { t } = useI18n();
   if (state === "idle") return null;
   const map = {

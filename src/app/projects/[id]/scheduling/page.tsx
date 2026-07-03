@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Minimize2 } from "lucide-react";
 
-import { SaveIndicator } from "@/components/fields";
 import JobTimeline from "@/components/JobTimeline";
+import { ScheduleJobPanel } from "@/components/ScheduleJobPanel";
 import { makeId } from "@/lib/defaults";
 import { useJobCategories } from "@/lib/useJobCategories";
 import { useProjectContext } from "@/lib/projectContext";
+import { useSubcontractors } from "@/lib/useSubcontractors";
 import type { Project } from "@/lib/types";
 
 function todayIso(): string {
@@ -113,46 +113,42 @@ function QuickAddPopover({
 
 export default function SchedulingPage() {
   const { project, setProject, loading, error, saveState } = useProjectContext();
-  const router = useRouter();
   const { categories } = useJobCategories();
+  const { subs } = useSubcontractors();
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickCategory, setQuickCategory] = useState("");
   const [quickStartDate, setQuickStartDate] = useState("");
   const [quickEndDate, setQuickEndDate] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading...</div>;
   if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
   if (!project) return null;
 
-  const base = `/projects/${project.id}`;
   const defaultStartDate = project.startDate || todayIso();
   const searchTerm = search.trim().toLowerCase();
   const filteredJobs = searchTerm
     ? project.jobs.filter((job) => job.category.toLowerCase().includes(searchTerm))
     : project.jobs;
 
-  function openInJobs(jobId: string) {
-    router.push(`${base}/manage?job=${jobId}`);
-  }
-
-  function openQuickAdd() {
-    setQuickCategory(categories[0] ?? "Designing");
+  function handleHoverAdd(prefillCategory: string) {
+    setQuickCategory(prefillCategory || categories[0] || "Designing");
     setQuickStartDate(defaultStartDate);
     setQuickEndDate("");
     setQuickAddOpen(true);
   }
 
   function saveQuickAdd() {
-    setProject((currentProject: Project) => ({
-      ...currentProject,
+    setProject((p: Project) => ({
+      ...p,
       jobs: [
-        ...currentProject.jobs,
+        ...p.jobs,
         {
           id: makeId(),
           category: quickCategory || categories[0] || "Designing",
-          startDate: quickStartDate || currentProject.startDate || todayIso(),
+          startDate: quickStartDate || p.startDate || todayIso(),
           endDate: quickEndDate,
           status: "N/A",
           approvedBidderId: null,
@@ -169,47 +165,59 @@ export default function SchedulingPage() {
   return (
     <>
       <main className="space-y-5">
-        <div className="flex justify-end">
-          <div className="flex items-center gap-2.5">
-            <SaveIndicator state={saveState} />
-            {project.jobs.length > 0 && (
-              <button type="button" className="btn h-10 gap-2 px-4" onClick={() => setExpanded(true)}>
-                <Maximize2 size={16} />
-                Expand
-              </button>
+        <div className="flex gap-4 items-start">
+          <div className="flex-1 min-w-0 relative">
+            <JobTimeline
+              jobs={filteredJobs}
+              selectedJobId={selectedJobId}
+              onSelect={(id) => setSelectedJobId((current) => (current === id ? null : id))}
+              onColorChange={(jobId, color) =>
+                setProject((p: Project) => ({
+                  ...p,
+                  jobs: p.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
+                }))
+              }
+              onHoverAdd={handleHoverAdd}
+              saveState={saveState}
+              onExpand={project.jobs.length > 0 ? () => setExpanded(true) : undefined}
+              searchValue={search}
+              onSearchChange={setSearch}
+            />
+
+            {quickAddOpen && (
+              <QuickAddPopover
+                categories={categories}
+                category={quickCategory}
+                startDate={quickStartDate}
+                endDate={quickEndDate}
+                onCategoryChange={setQuickCategory}
+                onStartDateChange={setQuickStartDate}
+                onEndDateChange={setQuickEndDate}
+                onClose={() => setQuickAddOpen(false)}
+                onSave={saveQuickAdd}
+              />
             )}
           </div>
-        </div>
 
-        <div className="relative">
-          <JobTimeline
-            jobs={filteredJobs}
-            selectedJobId={null}
-            onSelect={openInJobs}
-            onAddJob={openQuickAdd}
-            onColorChange={(jobId, color) =>
-              setProject((currentProject: Project) => ({
-                ...currentProject,
-                jobs: currentProject.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
-              }))
-            }
-            searchValue={search}
-            onSearchChange={setSearch}
-          />
-
-          {quickAddOpen && (
-            <QuickAddPopover
-              categories={categories}
-              category={quickCategory}
-              startDate={quickStartDate}
-              endDate={quickEndDate}
-              onCategoryChange={setQuickCategory}
-              onStartDateChange={setQuickStartDate}
-              onEndDateChange={setQuickEndDate}
-              onClose={() => setQuickAddOpen(false)}
-              onSave={saveQuickAdd}
-            />
-          )}
+          {selectedJobId && (() => {
+            const selectedJob = project.jobs.find((job) => job.id === selectedJobId);
+            if (!selectedJob) return null;
+            return (
+              <ScheduleJobPanel
+                project={project}
+                job={selectedJob}
+                categories={categories}
+                subcontractors={subs}
+                onChange={(updater) =>
+                  setProject((p: Project) => ({
+                    ...p,
+                    jobs: p.jobs.map((job) => (job.id === selectedJobId ? updater(job) : job)),
+                  }))
+                }
+                onClose={() => setSelectedJobId(null)}
+              />
+            );
+          })()}
         </div>
       </main>
 
@@ -247,14 +255,15 @@ export default function SchedulingPage() {
             <div className="flex-1 overflow-auto p-5">
               <JobTimeline
                 jobs={filteredJobs}
-                selectedJobId={null}
-                onSelect={openInJobs}
+                selectedJobId={selectedJobId}
+                onSelect={(id) => setSelectedJobId((current) => (current === id ? null : id))}
                 onColorChange={(jobId, color) =>
-                  setProject((currentProject: Project) => ({
-                    ...currentProject,
-                    jobs: currentProject.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
+                  setProject((p: Project) => ({
+                    ...p,
+                    jobs: p.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
                   }))
                 }
+                saveState={saveState}
                 searchValue={search}
                 onSearchChange={setSearch}
               />
