@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 import { fmtMultiple, fmtPercent } from "@/lib/format";
 import type { analyzeProject } from "@/lib/calculations";
@@ -13,7 +13,6 @@ type GradientHeroProps = {
   analysis: ProjectAnalysis | null;
   awardedPct: number;
   fmtMoney: (n: number | null | undefined) => string;
-  onEditProject: () => void;
 };
 
 function profitText(analysis: ProjectAnalysis | null, fmtMoney: (n: number | null | undefined) => string): string {
@@ -23,7 +22,7 @@ function profitText(analysis: ProjectAnalysis | null, fmtMoney: (n: number | nul
   return profit > 0 ? `+${formatted}` : formatted;
 }
 
-export function GradientHero({ project, analysis, awardedPct, fmtMoney, onEditProject }: GradientHeroProps) {
+export function GradientHero({ project, analysis, awardedPct, fmtMoney }: GradientHeroProps) {
   return (
     <section
       className="relative overflow-hidden"
@@ -43,17 +42,6 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney, onEditPr
         className="pointer-events-none absolute -bottom-28 -left-20 h-[300px] w-[300px]"
         style={{ background: "radial-gradient(circle, rgba(214,237,142,0.32), transparent 70%)" }}
       />
-
-      <button
-        type="button"
-        onClick={onEditProject}
-        className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors hover:bg-white/20"
-        style={{ border: "1px solid rgba(255,255,255,0.24)", background: "rgba(255,255,255,0.12)", color: "#fff" }}
-        aria-label="Edit project name, strategy and address"
-        title="Edit project details"
-      >
-        <Pencil size={14} />
-      </button>
 
       <div className="relative z-[1] grid gap-6 lg:grid-cols-[1.25fr_1fr] lg:items-center">
         <div className="min-w-0 pr-8">

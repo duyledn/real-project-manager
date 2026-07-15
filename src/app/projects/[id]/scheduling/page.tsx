@@ -112,7 +112,7 @@ function QuickAddPopover({
 }
 
 export default function SchedulingPage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const { categories } = useJobCategories();
   const { subs } = useSubcontractors();
   const [expanded, setExpanded] = useState(false);
@@ -178,7 +178,6 @@ export default function SchedulingPage() {
                 }))
               }
               onHoverAdd={handleHoverAdd}
-              saveState={saveState}
               onExpand={project.jobs.length > 0 ? () => setExpanded(true) : undefined}
               searchValue={search}
               onSearchChange={setSearch}
@@ -263,7 +262,6 @@ export default function SchedulingPage() {
                     jobs: p.jobs.map((job) => (job.id === jobId ? { ...job, color } : job)),
                   }))
                 }
-                saveState={saveState}
                 searchValue={search}
                 onSearchChange={setSearch}
               />

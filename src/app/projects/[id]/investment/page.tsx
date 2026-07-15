@@ -8,7 +8,7 @@ import { totalRenovationCost, annualRoomRevenue, analyzeProject } from "@/lib/ca
 import { fmtPercent, fmtMultiple } from "@/lib/format";
 import { KPI_COLORS } from "@/lib/palette";
 import { useCurrency } from "@/lib/currency";
-import { NumberField, MoneyInput, MoneyField, currencySymbol, ToggleField, SaveIndicator, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
+import { NumberField, MoneyInput, MoneyField, currencySymbol, ToggleField, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
 import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
@@ -23,7 +23,7 @@ const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as ExpenseFrequency[];
  *  hold assumptions, income, expenses, and exit. Drives Analysis, Math &
  *  Report. Construction line items live on their own tab. */
 export default function InvestmentPage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const { fmtMoney } = useCurrency();
 
   const [adjustMode, setAdjustMode] = useState(false);
@@ -48,12 +48,7 @@ export default function InvestmentPage() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display font-extrabold text-2xl leading-none">Investment Estimate</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">
-            How you acquire and finance the property, hold-period assumptions, income, expenses, and exit. Drives the
-            Analysis, Math &amp; Report tabs.
-          </p>
         </div>
-        <SaveIndicator state={saveState} />
       </div>
 
       {/* Headline KPIs — live from the calculation engine */}
@@ -115,7 +110,7 @@ export default function InvestmentPage() {
       <EditModeProvider readOnly={!adjustMode}>
       {/* 01 — Acquisition */}
       <section>
-        <SectionHeader num="01" title="Acquisition & Basis" caption="What you pay for the property, and how much of it is non-depreciable land." />
+        <SectionHeader num="01" title="Acquisition & Basis" />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <MoneyField label="Purchase Price" min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
           <MoneyField label="Closing Costs" min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
@@ -125,7 +120,7 @@ export default function InvestmentPage() {
 
       {/* 02 — Financing */}
       <section>
-        <SectionHeader num="02" title="Financing" caption="Borrowed capital, rate, and the interest-only rehab window before the loan begins amortizing." />
+        <SectionHeader num="02" title="Financing" />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <MoneyField label="Borrowed Capital" min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
           <NumberField label="Annual Interest Rate" suffix="%" step={0.1} min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
@@ -148,7 +143,7 @@ export default function InvestmentPage() {
 
       {/* 04 — Revenue sources */}
       <section>
-        <SectionHeader num="04" title="Revenue Sources" caption="Income the property produces. Room revenue appears as a live line item below, then vacancy is applied alongside the other sources." />
+        <SectionHeader num="04" title="Revenue Sources" />
 
         {/* Room revenue (hotel / short-term rental) */}
         <div className="panel p-5 mb-4">
@@ -217,7 +212,7 @@ export default function InvestmentPage() {
 
       {/* 06 — Exit & tax */}
       <section>
-        <SectionHeader num="06" title="Exit & Tax Assumptions" caption="How the property is valued at sale, and the tax rate used for after-tax returns." />
+        <SectionHeader num="06" title="Exit & Tax Assumptions" />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <NumberField label="Appreciation Rate" suffix="%/yr" step={0.1} value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} hint="Used to project sale price if no override below." />
           <MoneyField label="Exit Value Override" min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} hint="Set a specific sale price. 0 = use appreciation projection." />

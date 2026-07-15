@@ -85,3 +85,34 @@
 - Updated `COMMANDS.md`, `API_REFERENCE.md`.
 
 -->
+
+## 2026-07-14 — Project Settings Consolidation & Shell Polish: audit passed (code), visual QA pending
+- Scope (6 user requests): project-detail editing moved from Jobs & Bids §01 +
+  Dashboard modal into a new autosaving "Project details" card at the top of
+  Project Settings (name, strategy w/ datalist presets, address, start date,
+  PM, owner, GC); sidebar capped at `SIDEBAR_TOP = 79` /
+  `calc(100vh - 91px)`; ProjectSwitcher dropdown moved to a
+  `createPortal`+fixed panel (fixes clipping by the aside's `overflowY`);
+  Dashboard edit button/modal removed (GradientHero prop dropped);
+  SaveIndicator relocated to the shell header title row in
+  `[id]/layout.tsx` and stripped from all 6 pages + JobTimeline; descriptive
+  captions removed per keep/remove table (how-to captions retained).
+- Audit: diffed every modified file against the handoff with
+  `git diff --ignore-all-space` — all changes match spec. `tsc --noEmit`
+  exit 0 (run independently in sandbox). `JobsBidsBoard.tsx`'s huge diff is
+  pure CRLF→LF churn, zero content change.
+- Approved deviations: Project Name + Investment Strategy use native inputs
+  (TextField lacks blur-commit and `list` props; `fields.tsx` was
+  off-limits). Empty-name guard: ref captures last non-empty name on focus,
+  restores on empty blur ("Untitled project" fallback). Portal menu ignores
+  its own internal scroll so long project lists stay scrollable.
+- Blocked verification: `next dev` never served a page in the Coding LLM's
+  environment NOR my sandbox (hangs at "Starting…" — mounted-FS/OneDrive
+  slowness, consistent with prior sandbox artifacts). ESLint not installed
+  so `next lint` can't run. USER must visually verify: sidebar never
+  under-laps TopNav (tweak SIDEBAR_TOP if off by a few px), dropdown
+  position/close-on-scroll, header Saving…/Saved placement.
+- Docs: no changes to COMMANDS.md / API_REFERENCE.md needed (pure UI, no new
+  commands or endpoints). Flagged overlap: `schedule-redesign.md` handoff
+  also contains a sidebar max-height task — now superseded; prune before
+  dispatch.

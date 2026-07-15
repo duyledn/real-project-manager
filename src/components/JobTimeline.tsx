@@ -13,10 +13,8 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
-import { SaveIndicator } from "@/components/fields";
 import { JOB_COLOR_PALETTE, contrastText } from "@/lib/jobs";
 import type { Job, JobStatus } from "@/lib/types";
-import type { SaveState } from "@/components/fields";
 
 /** Status -> bar fill in the warm "estate" palette, progressing as a job
  *  advances. Vivid enough to read on both light and dark surfaces. */
@@ -123,7 +121,6 @@ type JobTimelineProps = {
   jobs: Job[];
   selectedJobId: string | null;
   onSelect: (id: string) => void;
-  saveState?: SaveState;
   onExpand?: () => void;
   onHoverAdd?: (category: string) => void;
   onColorChange?: (jobId: string, color: string) => void;
@@ -135,7 +132,6 @@ export function JobTimeline({
   jobs,
   selectedJobId,
   onSelect,
-  saveState,
   onExpand,
   onHoverAdd,
   onColorChange,
@@ -177,7 +173,6 @@ export function JobTimeline({
         />
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        {saveState && <SaveIndicator state={saveState} />}
         {onExpand && (
           <button
             type="button"

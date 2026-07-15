@@ -100,7 +100,7 @@ export default function AnalysisPage() {
     <div className="space-y-10">
       {/* Headline KPIs */}
       <section>
-        <SectionHeader num="01" title="Investment Returns" caption={`${project.holdYears}-year levered, after-tax projection. All figures recompute live from your inputs.`} />
+        <SectionHeader num="01" title="Investment Returns" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Kpi label="IRR (levered)" value={fmtPercent(returns.irr)} accent={(returns.irr ?? 0) >= 0 ? "green" : "red"} big />
           <Kpi label="Equity Multiple" value={fmtMultiple(returns.equityMultiple)} />
@@ -115,7 +115,7 @@ export default function AnalysisPage() {
 
       {/* Earnings chart */}
       <section>
-        <SectionHeader num="02" title="Earnings & Cash Flow by Year" caption="EBITDA (≈NOI) steps down to EBIT after depreciation, then to cash flow after debt service and tax." />
+        <SectionHeader num="02" title="Earnings & Cash Flow by Year" />
         <div className="panel p-5">
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +142,7 @@ export default function AnalysisPage() {
       {/* Pro forma table */}
       <section>
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <SectionHeader num="03" title="Operating Pro Forma" caption="Full income statement per year, from gross rent down to levered after-tax cash flow." />
+          <SectionHeader num="03" title="Operating Pro Forma" />
           <button onClick={exportProformaCsv} className="btn gap-1.5 shrink-0">
             <Download size={14} /> Export CSV
           </button>
@@ -194,7 +194,7 @@ export default function AnalysisPage() {
 
       {/* Exit */}
       <section>
-        <SectionHeader num="05" title="Exit Summary" caption={`Projected sale at the end of year ${project.holdYears}.`} />
+        <SectionHeader num="05" title="Exit Summary" />
         <div className="panel divide-y divide-hair">
           <ExitRow label="Projected Sale Price" value={exit.exitValue} fmtMoney={fmtMoney} />
           <ExitRow label="Selling Costs" value={-exit.sellingCosts} muted fmtMoney={fmtMoney} />

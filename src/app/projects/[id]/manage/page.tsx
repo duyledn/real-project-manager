@@ -10,7 +10,7 @@ import { makeId } from "@/lib/defaults";
 import { approvedBidder, showsApprovedDetails } from "@/lib/jobs";
 import { JOB_STATUSES } from "@/lib/types";
 import type { Project, Job } from "@/lib/types";
-import { SaveIndicator, SectionHeader, TextField, DateField, DragHandle } from "@/components/fields";
+import { SectionHeader, TextField, DragHandle } from "@/components/fields";
 import { useDragReorder, moveItem } from "@/lib/useDragReorder";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { ResizableTh } from "@/components/ResizableTh";
@@ -18,7 +18,7 @@ import { JobDrawer } from "@/components/JobDrawer";
 import { JobsBidsBoard } from "@/components/JobsBidsBoard";
 
 export default function ManagePage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const { categories, addCategory, removeCategory } = useJobCategories();
   const { subs } = useSubcontractors();
   const { fmtMoney } = useCurrency();
@@ -120,27 +120,10 @@ export default function ManagePage() {
 
   return (
     <div className="space-y-10">
-      {/* Save status (the project name now lives in the shell header) */}
-      <div className="flex justify-end">
-        <SaveIndicator state={saveState} />
-      </div>
-
-      {/* 01 — Project details */}
-      <section>
-        <SectionHeader num="01" title="Project Details" caption="Who's running the job and the anticipated start. New jobs default to this start date." />
-        <div className="panel p-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <DateField label="Anticipated Start Date" value={project.startDate} onChange={(v) => patch((p) => ({ ...p, startDate: v }))} />
-          <TextField label="Project Address" value={project.projectAddress} onChange={(v) => patch((p) => ({ ...p, projectAddress: v }))} placeholder="123 Main St, City" />
-          <TextField label="Project Manager" value={project.projectManager} onChange={(v) => patch((p) => ({ ...p, projectManager: v }))} placeholder="Name" />
-          <TextField label="Owner" value={project.owner} onChange={(v) => patch((p) => ({ ...p, owner: v }))} placeholder="Name" />
-          <TextField label="General Contractor" value={project.generalContractor} onChange={(v) => patch((p) => ({ ...p, generalContractor: v }))} placeholder="Company / name" />
-        </div>
-      </section>
-
-      {/* 02 — Jobs table */}
+      {/* 01 — Jobs table */}
       <section>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-          <SectionHeader num="02" title="Jobs" caption="Each construction scope. Click a row to manage its bids." />
+          <SectionHeader num="01" title="Jobs" caption="Each construction scope. Click a row to manage its bids." />
           <button onClick={() => setShowCatManager((s) => !s)} className="btn inline-flex items-center gap-1.5 shrink-0">
             <Settings2 size={14} /> Manage categories
           </button>
@@ -303,9 +286,9 @@ export default function ManagePage() {
         </button>
       </section>
 
-      {/* 03 — Bids board (Kanban / Spreadsheet) */}
+      {/* 02 — Bids board (Kanban / Spreadsheet) */}
       <section>
-        <SectionHeader num="03" title="Bids" caption="Track every bid as a Kanban board (drag to change status) or an Excel-style spreadsheet across all jobs." />
+        <SectionHeader num="02" title="Bids" caption="Track every bid as a Kanban board (drag to change status) or an Excel-style spreadsheet across all jobs." />
         <JobsBidsBoard
           project={project}
           setProject={setProject}
@@ -315,9 +298,9 @@ export default function ManagePage() {
         />
       </section>
 
-      {/* 04 — Bid email identity (kept last: it configures outgoing bid-request emails) */}
+      {/* 03 — Bid email identity (kept last: it configures outgoing bid-request emails) */}
       <section>
-        <SectionHeader num="04" title="Bid Email Identity" caption="Used to auto-fill bid-request emails sent from each job's bidder rows." />
+        <SectionHeader num="03" title="Bid Email Identity" caption="Used to auto-fill bid-request emails sent from each job's bidder rows." />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
           <TextField label="Your Company Name" value={project.companyName} onChange={(v) => patch((p) => ({ ...p, companyName: v }))} placeholder="123 Construction" />
           <TextField label="Your Name (sender)" value={project.senderName} onChange={(v) => patch((p) => ({ ...p, senderName: v }))} placeholder="Duy" />

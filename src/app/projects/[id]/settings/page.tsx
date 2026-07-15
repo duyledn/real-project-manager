@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
+  ClipboardList,
   Upload,
   Trash2,
   ImageIcon,
@@ -12,9 +13,19 @@ import {
   FileDown,
   History,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { useCurrency, convertProjectCurrency } from "@/lib/currency";
-import { NumberInput, SaveIndicator } from "@/components/fields";
+import { DateField, NumberInput, TextField } from "@/components/fields";
+
+const STRATEGY_PRESETS = [
+  "Buy-Rehab-Hold Rental",
+  "Buy-Rehab-Sell (Flip)",
+  "Short-Term / Vacation Rental",
+  "BRRRR",
+  "New Construction",
+  "Commercial / Mixed-Use",
+];
 
 /** Downscale an uploaded image to a small square data URL so the project JSON
  *  stays light. Returns a JPEG/PNG data URL ~256px on the long edge. */
@@ -45,10 +56,11 @@ function fileToAvatarDataUrl(file: File, max = 256): Promise<string> {
 }
 
 export default function SettingsPage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const { currency, exchangeRate, setExchangeRate, setCurrency } = useCurrency();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const lastNonEmptyNameRef = useRef("");
   const [busy, setBusy] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -58,7 +70,6 @@ export default function SettingsPage() {
   if (!project) return null;
 
   const target = currency === "USD" ? "VND" : "USD";
-
   function handleConvert() {
     const rate = exchangeRate;
     if (!Number.isFinite(rate) || rate <= 0) {
@@ -107,14 +118,65 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-7 max-w-3xl">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-ink-muted">
-          Settings for <span className="font-semibold text-ink">{project.name}</span>. Looking for theme or
-          profile? Those live in <span className="font-semibold text-ink">workspace Settings</span> (top-right
-          gear).
-        </p>
-        <SaveIndicator state={saveState} />
-      </div>
+      <p className="text-sm text-ink-muted">
+        Settings for <span className="font-semibold text-ink">{project.name}</span>. Looking for theme or
+        profile? Those live in <span className="font-semibold text-ink">workspace Settings</span> (top-right
+        gear).
+      </p>
+
+      {/* ---- Project details ---- */}
+      <SettingsCard
+        icon={ClipboardList}
+        title="Project details"
+        caption="Changes save automatically. New jobs default to the anticipated start date."
+      >
+        <div className="grid sm:grid-cols-2 gap-5">
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Project Name</span>
+            <input
+              value={project.name}
+              onFocus={() => {
+                if (project.name.trim()) lastNonEmptyNameRef.current = project.name;
+              }}
+              onChange={(e) => setProject((p) => ({ ...p, name: e.target.value }))}
+              onBlur={(e) => {
+                if (!e.target.value.trim()) {
+                  setProject((p) => ({ ...p, name: lastNonEmptyNameRef.current || "Untitled project" }));
+                } else {
+                  lastNonEmptyNameRef.current = e.target.value;
+                }
+              }}
+              placeholder="Project name"
+              className="field-input text-base font-semibold"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Investment Strategy</span>
+            <input
+              value={project.investmentStrategy}
+              onChange={(e) => setProject((p) => ({ ...p, investmentStrategy: e.target.value }))}
+              list="strategy-presets"
+              placeholder="e.g. Buy-Rehab-Hold Rental"
+              className="field-input text-base font-semibold"
+            />
+            <datalist id="strategy-presets">
+              {STRATEGY_PRESETS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </label>
+          <TextField label="Project Address" value={project.projectAddress}
+            onChange={(v) => setProject((p) => ({ ...p, projectAddress: v }))} placeholder="123 Main St, City" />
+          <DateField label="Anticipated Start Date" value={project.startDate}
+            onChange={(v) => setProject((p) => ({ ...p, startDate: v }))} />
+          <TextField label="Project Manager" value={project.projectManager}
+            onChange={(v) => setProject((p) => ({ ...p, projectManager: v }))} placeholder="Name" />
+          <TextField label="Owner" value={project.owner}
+            onChange={(v) => setProject((p) => ({ ...p, owner: v }))} placeholder="Name" />
+          <TextField label="General Contractor" value={project.generalContractor}
+            onChange={(v) => setProject((p) => ({ ...p, generalContractor: v }))} placeholder="Company / name" />
+        </div>
+      </SettingsCard>
 
       {/* ---- Currency ---- */}
       <SettingsCard
@@ -154,7 +216,6 @@ export default function SettingsPage() {
       <SettingsCard
         icon={ImageIcon}
         title="Project image"
-        caption="A photo or logo for this project. Shows in the sidebar and on the dashboard."
       >
         <div className="flex items-center gap-4 flex-wrap">
           {project.profileImage ? (
@@ -255,9 +316,9 @@ function SettingsCard({
   caption,
   children,
 }: {
-  icon: typeof ArrowLeftRight;
+  icon: LucideIcon;
   title: string;
-  caption: string;
+  caption?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -268,7 +329,7 @@ function SettingsCard({
         </div>
         <div>
           <h2 className="font-extrabold text-[15px] leading-tight">{title}</h2>
-          <p className="text-[12px] text-ink-muted mt-0.5 max-w-lg">{caption}</p>
+          {caption && <p className="text-[12px] text-ink-muted mt-0.5 max-w-lg">{caption}</p>}
         </div>
       </div>
       {children}

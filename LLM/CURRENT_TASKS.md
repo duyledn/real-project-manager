@@ -1,7 +1,8 @@
 # Current Tasks
 
 ## Active
-- Schedule page redesign + sidebar max-height fix - Status: needs-handoff - Handoff: `LLM/handoffs/schedule-redesign.md` - Context: `LLM/context/schedule-redesign.md`
+- Project Settings consolidation & shell polish - Status: needs-user-visual-QA - Handoff: `LLM/handoffs/project-settings-and-shell-polish.md` - Last completion: `LLM/completions/project-settings-and-shell-polish.md` - Note: code review + tsc passed; browser walkthrough blocked in both LLM environments. User to verify: sidebar top/height constants (SIDEBAR_TOP=79), switcher dropdown position, header save indicator.
+- Schedule page redesign + sidebar max-height fix - Status: needs-handoff - Handoff: `LLM/handoffs/schedule-redesign.md` - Context: `LLM/context/schedule-redesign.md` - Note: sidebar max-height portion now superseded by project-settings-and-shell-polish (layout.tsx SIDEBAR_TOP); re-check that handoff for overlap before dispatching.
 - Global visual redesign ("Verdant Glass") - Status: needs-handoff - Handoff: `LLM/handoffs/global-redesign.md` - Context: `LLM/context/global-redesign.md`
 - UX polish batch (glass + 9 schedule/date tasks) - Status: needs-handoff - Handoff: `LLM/handoffs/ux-polish.md` - Context: `LLM/context/ux-polish.md`
 

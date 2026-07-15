@@ -6,7 +6,7 @@ import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
 import { totalRenovationCost } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
-import { SaveIndicator, SectionHeader } from "@/components/fields";
+import { SectionHeader } from "@/components/fields";
 import { copyRowsAsTSV } from "@/lib/clipboard";
 import { ItemsTable } from "@/components/ItemsTable";
 import { ColorPicker, tint } from "@/components/ColorPicker";
@@ -17,7 +17,7 @@ const ITEM_CATEGORIES = ["Materials", "Labor", "Permits & Fees", "Contingency", 
 /** Construction Estimate — the itemized scope of work (renovation line items).
  *  These line items also auto-fill the Jobs section under Jobs & Bids. */
 export default function ConstructionPage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const { fmtMoney, currency } = useCurrency();
 
   const [itemsView, setItemsView] = useState<"table" | "grouped">("table");
@@ -120,12 +120,8 @@ export default function ConstructionPage() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display font-extrabold text-2xl leading-none">Construction Estimate</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">
-            What the remodel itself costs — the itemized scope of work. These line items also auto-fill the Jobs
-            section under Jobs &amp; Bids.
-          </p>
+          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">Line items here auto-fill the Jobs section under Jobs &amp; Bids.</p>
         </div>
-        <SaveIndicator state={saveState} />
       </div>
 
       {/* Itemized remodel costs */}

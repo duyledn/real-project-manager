@@ -120,7 +120,7 @@ export default function MathPage() {
       </section>
 
       <section>
-        <SectionHeader num="04" title="Year 1 Income Statement" caption="Each line traced from gross rent to levered cash flow." />
+        <SectionHeader num="04" title="Year 1 Income Statement" />
         <div className="space-y-3">
           {roomRev > 0 && (
             <Formula title="Room Revenue (gross / yr)" formula="rooms × ADR × 365" substitution={`${p.rooms} × ${fmtMoney(p.adr)} × 365`} result={fmtMoney(roomRev)} note="Joins the income stream below, then vacancy is applied to the combined gross." />

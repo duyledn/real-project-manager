@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
-import { SaveIndicator } from "@/components/fields";
 import type { Project, ProjectFile } from "@/lib/types";
 
 /** Per-file size cap. Files persist as data URLs inside the project JSON, so
@@ -59,7 +58,7 @@ function fileIconFor(f: ProjectFile) {
 }
 
 export default function FilesPage() {
-  const { project, setProject, loading, error, saveState } = useProjectContext();
+  const { project, setProject, loading, error } = useProjectContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [folderId, setFolderId] = useState<string | null>(null); // null = root
@@ -224,12 +223,8 @@ export default function FilesPage() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display font-extrabold text-2xl leading-none">Files</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">
-            Plans, contracts, permits, photos — organize every document for this project in folders. Drag items onto a
-            folder to move them.
-          </p>
+          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">Drag items onto a folder to move them.</p>
         </div>
-        <SaveIndicator state={saveState} />
       </div>
 
       {/* Toolbar: breadcrumb + actions */}

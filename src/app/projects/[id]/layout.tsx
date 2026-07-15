@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   LayoutDashboard,
   Calculator,
@@ -21,6 +22,7 @@ import { useSession } from "@/lib/session-context";
 import { useI18n } from "@/lib/i18n";
 import { profileInitials } from "@/lib/useWorkspaceProfile";
 import type { ProjectSummary } from "@/lib/types";
+import { SaveIndicator } from "@/components/fields";
 
 const FINANCIALS_SUBTABS = [
   { slug: "construction", label: "Construction Estimate" },
@@ -31,6 +33,7 @@ const FINANCIALS_SUBTABS = [
 ];
 
 const FINANCIALS_SLUGS = FINANCIALS_SUBTABS.map((t) => t.slug);
+const SIDEBAR_TOP = 79;
 
 /** Keeps the displayed currency mirroring the active project's stored currency.
  *  No UI — the header currency control now lives in Project settings. */
@@ -51,6 +54,8 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     if (!open || loaded) return;
@@ -64,10 +69,24 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setRect(ref.current?.getBoundingClientRect() ?? null);
+    const close = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("scroll", close, true);
+    return () => window.removeEventListener("scroll", close, true);
   }, [open]);
 
   return (
@@ -82,10 +101,15 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
         <ChevronsUpDown size={18} />
       </button>
 
-      {open && (
+      {open && rect && typeof document !== "undefined" && createPortal(
         <div
-          className="absolute left-0 top-full mt-2 w-[252px] p-2 z-[120]"
+          ref={menuRef}
+          className="p-2 z-[120]"
           style={{
+            position: "fixed",
+            top: rect.bottom + 8,
+            left: rect.left,
+            width: 252,
             borderRadius: 16,
             background: "var(--glass-strong)",
             backdropFilter: "var(--blur)",
@@ -129,14 +153,15 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
           >
             <Plus size={14} /> {t("New / all projects")}
           </Link>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
 }
 
 function ShellChrome({ id, children }: { id: string; children: React.ReactNode }) {
-  const { project } = useProjectContext();
+  const { project, saveState } = useProjectContext();
   const { user } = useSession();
   const { t } = useI18n();
   const pathname = usePathname();
@@ -213,7 +238,13 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
       <div className="flex gap-4 sm:gap-[18px] items-start">
         <aside
           className="panel no-print w-[252px] shrink-0 p-[15px] hidden lg:flex flex-col self-stretch"
-          style={{ borderRadius: 26, position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}
+          style={{
+            borderRadius: 26,
+            position: "sticky",
+            top: SIDEBAR_TOP,
+            maxHeight: `calc(100vh - ${SIDEBAR_TOP + 12}px)`,
+            overflowY: "auto",
+          }}
         >
           <div className="panel-2 flex items-center gap-3 p-[11px] mb-4">
             {project?.profileImage ? (
@@ -317,10 +348,11 @@ function ShellChrome({ id, children }: { id: string; children: React.ReactNode }
 
         <main className="panel flex-1 min-w-0 flex flex-col overflow-hidden self-stretch" style={{ borderRadius: 26 }}>
           <div className="no-print flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">{screen.kicker}</div>
               <div className="text-[22px] font-extrabold tracking-tight mt-0.5 truncate">{screen.title}</div>
             </div>
+            <div className="no-print shrink-0"><SaveIndicator state={saveState} /></div>
             <nav className="flex lg:hidden gap-1 p-1 rounded-[13px]" style={{ background: "var(--glass-2)", border: "1px solid var(--border)" }}>
               {[...nav, ...bottomNav].map((item) => {
                 const Icon = item.icon;
