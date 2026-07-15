@@ -15,6 +15,7 @@ Format (one line per task):
 -->
 
 ## Completed
+- Full Vietnamese sweep + floaty drag + checkbox redesign - Completed: 2026-07-14 - Completion: `LLM/completions/i18n-sweep-drag-feel-checkbox.md` - Notes: `LLM/orchestrator_notes.md` - Note: browser visual QA (Vietnamese display, drag feel, checkbox) still needed before deploy
 - Postgres Storage Driver - Completed: 2026-06-30 - Completion: `LLM/completions/postgres-storage.md` - Notes: `LLM/orchestrator_notes.md`
 - Fix broken project page export - Completed: 2026-06-30 - Completion: `LLM/completions/fix-broken-project-page-export.md` - Notes: `LLM/orchestrator_notes.md`
 

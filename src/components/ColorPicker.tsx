@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { JOB_COLOR_PALETTE } from "@/lib/jobs";
+import { useI18n } from "@/lib/i18n";
 
 const POPOVER_W = 184;
 const POPOVER_H = 230;
@@ -29,6 +30,7 @@ export function ColorPicker({
   title?: string;
   emptyLabel?: string;
 }) {
+  const { t } = useI18n();
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -54,8 +56,8 @@ export function ColorPicker({
         ref={btnRef}
         type="button"
         onClick={toggle}
-        title={title}
-        aria-label={title}
+        title={t(title)}
+        aria-label={t(title)}
         className="rounded-[5px] shrink-0 hover:scale-110 transition-transform"
         style={{
           width: size,
@@ -87,10 +89,10 @@ export function ColorPicker({
                 boxShadow: "var(--shadow-lg)",
               }}
             >
-              <div className="label-mono mb-2">{title}</div>
+              <div className="label-mono mb-2">{t(title)}</div>
               <div className="space-y-1">
                 {JOB_COLOR_PALETTE.map((row) => (
-                  <div key={row.name} className="flex gap-1" title={row.name}>
+                  <div key={row.name} className="flex gap-1" title={t(row.name)}>
                     {row.shades.map((hex) => (
                       <button
                         key={hex}
@@ -105,7 +107,7 @@ export function ColorPicker({
                           outline: value === hex ? "2px solid var(--accent)" : "1px solid var(--border)",
                           outlineOffset: value === hex ? "1px" : "0",
                         }}
-                        aria-label={`${row.name} ${hex}`}
+                        aria-label={`${t(row.name)} ${hex}`}
                       />
                     ))}
                   </div>
@@ -120,7 +122,7 @@ export function ColorPicker({
                 className="mt-2 w-full font-mono text-[10px] uppercase tracking-wider rounded-[10px] py-1.5 transition-colors text-ink-muted hover:text-accent"
                 style={{ border: "1px solid var(--border)", background: "var(--glass-2)" }}
               >
-                {emptyLabel}
+                {t(emptyLabel)}
               </button>
             </div>
           </>,

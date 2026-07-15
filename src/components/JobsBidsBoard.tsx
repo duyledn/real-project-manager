@@ -17,6 +17,7 @@ import { syncJobFromBidders } from "@/lib/jobs";
 import { BIDDER_STATUSES } from "@/lib/types";
 import type { Project, Job, Bidder, SubcontractorWithJobs, BidderStatus } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
+import { useI18n } from "@/lib/i18n";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { MoneyInput } from "@/components/fields";
 import { ResizableTh } from "@/components/ResizableTh";
@@ -65,6 +66,7 @@ export function JobsBidsBoard({
   initialJobId?: string | null;
 }) {
   const { fmtMoney } = useCurrency();
+  const { t } = useI18n();
   const [view, setView] = useState<View>("kanban");
   const [kanbanJobId, setKanbanJobId] = useState<string | null>(
     initialJobId ?? project.jobs[0]?.id ?? null,
@@ -148,23 +150,23 @@ export function JobsBidsBoard({
               { key: "kanban", label: "Kanban", Icon: LayoutGrid },
               { key: "spreadsheet", label: "Spreadsheet", Icon: Table2 },
             ] as const
-          ).map((t) => (
+          ).map((viewOption) => (
             <button
-              key={t.key}
-              onClick={() => setView(t.key)}
+              key={viewOption.key}
+              onClick={() => setView(viewOption.key)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12.5px] font-bold transition-colors"
-              style={view === t.key
+              style={view === viewOption.key
                 ? { background: "var(--seg-active)", color: "var(--text)", boxShadow: "var(--shadow)" }
                 : { color: "var(--muted)" }}
             >
-              <t.Icon size={16} /> {t.label}
+              <viewOption.Icon size={16} /> {t(viewOption.label)}
             </button>
           ))}
         </div>
         <div className="text-xs text-ink-muted">
           {view === "kanban"
-            ? "Pick a job, then drag bids between status columns."
-            : "Every bid across all jobs — edit any cell."}
+            ? t("Pick a job, then drag bids between status columns.")
+            : t("Every bid across all jobs — edit any cell.")}
         </div>
       </div>
 
@@ -232,6 +234,7 @@ function KanbanView({
   addJob: () => void;
   addBidderTo: (jobId: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <>
       {/* Job picker chips */}
@@ -247,7 +250,7 @@ function KanbanView({
                 ? { background: "linear-gradient(150deg,var(--accent),var(--accent-2))", color: "#fff", boxShadow: "0 6px 16px var(--accent-soft)" }
                 : { background: "var(--glass-2)", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
-              {j.category}
+              {t(j.category)}
               <span
                 className="text-[11px] font-bold px-1.5 rounded-full"
                 style={active ? { background: "rgba(255,255,255,0.25)" } : { background: "var(--glass)", color: "var(--faint)" }}
@@ -262,18 +265,18 @@ function KanbanView({
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-semibold text-ink-muted shrink-0"
           style={{ border: "1px dashed var(--border)" }}
         >
-          <Plus size={16} /> Add job
+          <Plus size={16} /> {t("Add job")}
         </button>
       </div>
 
       {!selectedJob ? (
         <div className="panel-2 p-10 text-center text-ink-muted text-sm">
-          No jobs yet. Add a job to start collecting bids.
+          {t("No jobs yet. Add a job to start collecting bids.")}
         </div>
       ) : (
         <>
           <div className="flex items-center gap-2 mb-3 text-xs text-ink-muted">
-            <GripVertical size={15} /> Drag bid cards between lanes to update their status.
+            <GripVertical size={15} /> {t("Drag bid cards between lanes to update their status.")}
           </div>
           <div className="flex flex-col gap-[11px]">
             {BIDDER_STATUSES.map((status) => {
@@ -313,7 +316,7 @@ function KanbanView({
                         boxShadow: `0 0 0 3px ${hexAlpha(color, 0.13)}`,
                       }}
                     />
-                    <span className="text-[13px] font-extrabold">{BID_STATUS_SHORT[status]}</span>
+                    <span className="text-[13px] font-extrabold">{t(BID_STATUS_SHORT[status])}</span>
                     <span
                       className="text-[11px] font-bold px-2 py-0.5 rounded-full"
                       style={{ background: "var(--glass)", color: "var(--muted)", border: "1px solid var(--border)" }}
@@ -342,7 +345,7 @@ function KanbanView({
                           color: "var(--faint)",
                         }}
                       >
-                        Drag a bid here
+                        {t("Drag a bid here")}
                       </div>
                     ) : (
                     bids.map((b) => {
@@ -375,7 +378,7 @@ function KanbanView({
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-[12.5px] font-bold truncate" style={{ maxWidth: 130 }}>
-                                {sub?.companyName ?? "Unassigned"}
+                                {sub?.companyName ?? t("Unassigned")}
                               </div>
                               <div className="text-[10.5px] text-ink-muted truncate">
                                 {sub?.representativeName || "-"}
@@ -393,10 +396,10 @@ function KanbanView({
                                   rel="noopener noreferrer"
                                   className="text-[10.5px] font-bold px-2 py-0.5 rounded-full"
                                   style={{ background: "var(--glass)", color: "var(--muted)", border: "1px solid var(--border)" }}
-                                  title="Open bid document"
+                                  title={t("Open bid document")}
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  PDF
+                                  {t("PDF")}
                                 </a>
                               )}
                               {comp.ok ? (
@@ -416,7 +419,7 @@ function KanbanView({
             })}
           </div>
           <button onClick={() => addBidderTo(selectedJob.id)} className="btn mt-4 gap-1.5">
-            <Plus size={15} /> Add bid to {selectedJob.category}
+            <Plus size={15} /> {t("Add bid to {category}", { category: t(selectedJob.category) })}
           </button>
         </>
       )}
@@ -446,6 +449,7 @@ function SpreadsheetView({
   removeBidder: (jobId: string, bidId: string) => void;
   addBidRow: () => void;
 }) {
+  const { t } = useI18n();
   // Report-style data table: clean horizontal rules, no vertical gridlines, a
   // strong header underline, alternating row tint, and a soft hover. Columns are
   // resizable via the grip on each header's right edge.
@@ -472,19 +476,19 @@ function SpreadsheetView({
           <thead>
             <tr className="border-b-[1.5px] border-ink">
               <th className="label-mono p-2.5 text-center" style={sticky}>#</th>
-              <ResizableTh label="Job / Category" col="cat" startResize={startResize} style={sticky} />
-              <ResizableTh label="Subcontractor" col="sub" startResize={startResize} style={sticky} />
-              <ResizableTh label="Bid price" col="price" startResize={startResize} align="right" style={sticky} />
-              <ResizableTh label="Status" col="status" startResize={startResize} style={sticky} />
-              <th className="label-mono p-2.5 text-center" style={sticky}>Doc</th>
-              <th className="label-mono p-2.5 text-center" style={sticky}>Compliance</th>
+              <ResizableTh label={t("Job / Category")} col="cat" startResize={startResize} style={sticky} />
+              <ResizableTh label={t("Subcontractor")} col="sub" startResize={startResize} style={sticky} />
+              <ResizableTh label={t("Bid price")} col="price" startResize={startResize} align="right" style={sticky} />
+              <ResizableTh label={t("Status")} col="status" startResize={startResize} style={sticky} />
+              <th className="label-mono p-2.5 text-center" style={sticky}>{t("Doc")}</th>
+              <th className="label-mono p-2.5 text-center" style={sticky}>{t("Compliance")}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center text-ink-muted text-sm p-8">
-                  No bids yet. Add your first bid row below.
+                  {t("No bids yet. Add your first bid row below.")}
                 </td>
               </tr>
             ) : (
@@ -508,7 +512,7 @@ function SpreadsheetView({
                         className={cellSelect + " font-semibold"}
                       >
                         {[...new Set([job.category, ...categories])].map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                          <option key={c} value={c}>{t(c)}</option>
                         ))}
                       </select>
                     </td>
@@ -518,7 +522,7 @@ function SpreadsheetView({
                         onChange={(e) => editBidder(job.id, bidder.id, { subcontractorId: e.target.value || null })}
                         className={cellSelect}
                       >
-                        <option value="">— Select —</option>
+                        <option value="">{t("— Select —")}</option>
                         {subs.map((s) => (
                           <option key={s.id} value={s.id}>{s.companyName}</option>
                         ))}
@@ -531,7 +535,7 @@ function SpreadsheetView({
                           min={0}
                           onChange={(v) => editBidder(job.id, bidder.id, { bidPrice: v })}
                           className="w-full bg-transparent font-mono text-[13px] text-right text-ink outline-none py-2.5"
-                          ariaLabel="Bid price"
+                          ariaLabel={t("Bid price")}
                         />
                       </div>
                     </td>
@@ -545,7 +549,7 @@ function SpreadsheetView({
                         >
                           {BIDDER_STATUSES.map((s) => (
                             <option key={s} value={s} style={{ color: "var(--text)", background: "var(--surface-solid)" }}>
-                              {s}
+                              {t(s)}
                             </option>
                           ))}
                         </select>
@@ -560,16 +564,16 @@ function SpreadsheetView({
                           className="inline-flex items-center gap-1 text-[10.5px] text-ink-muted px-2 py-1 rounded-md"
                           style={{ background: "var(--glass)" }}
                         >
-                          <FileText size={13} /> PDF
+                          <FileText size={13} /> {t("PDF")}
                         </a>
                       ) : (
                         <button
                           onClick={() => {
-                            const link = window.prompt("Paste a link to the bid document (Drive, etc.)");
+                            const link = window.prompt(t("Paste a link to the bid document (Drive, etc.)"));
                             if (link) editBidder(job.id, bidder.id, { bidLink: link.trim() });
                           }}
                           className="inline-flex items-center justify-center text-faint hover:text-accent"
-                          title="Attach bid document link"
+                          title={t("Attach bid document link")}
                         >
                           <Upload size={17} />
                         </button>
@@ -580,14 +584,14 @@ function SpreadsheetView({
                         {comp.ok ? (
                           <CheckCircle2 size={17} className="text-green" />
                         ) : (
-                          <span title={`Missing ${comp.missing.join(", ")}`} className="inline-flex">
+                          <span title={t("Missing {docs}", { docs: comp.missing.map((doc) => t(doc)).join(", ") })} className="inline-flex">
                             <AlertCircle size={17} style={{ color: "var(--warn)" }} />
                           </span>
                         )}
                         <button
                           onClick={() => removeBidder(job.id, bidder.id)}
                           className="text-faint hover:text-red"
-                          title="Remove bid"
+                          title={t("Remove bid")}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -605,7 +609,7 @@ function SpreadsheetView({
         className="w-full flex items-center justify-center gap-1.5 py-3 text-[12.5px] font-bold text-accent"
         style={{ borderTop: "1px solid var(--border)" }}
       >
-        <Plus size={16} /> Add bid row
+        <Plus size={16} /> {t("Add bid row")}
       </button>
     </div>
   );

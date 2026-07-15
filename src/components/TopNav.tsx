@@ -30,7 +30,7 @@ export function TopNav() {
         className="panel max-w-[1240px] mx-auto flex items-center justify-between gap-4 px-4 py-2.5"
         style={{ background: "var(--glass-strong)" }}
       >
-        <Link href="/" className="flex items-center gap-3 min-w-0 group" title="Back to all projects">
+        <Link href="/" className="flex items-center gap-3 min-w-0 group" title={t("Back to all projects")}>
           <Logo size={30} className="text-accent shrink-0 transition-transform group-hover:scale-105" />
           <div className="font-extrabold text-[14.5px] tracking-tight whitespace-nowrap hidden sm:block">
             Real Project Manager

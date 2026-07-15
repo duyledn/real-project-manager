@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { JOB_COLOR_PALETTE, contrastText } from "@/lib/jobs";
+import { useI18n } from "@/lib/i18n";
 import type { Job, JobStatus } from "@/lib/types";
 
 /** Status -> bar fill in the warm "estate" palette, progressing as a job
@@ -81,9 +82,9 @@ function monthName(time: number): string {
   return MONTHS[new Date(time).getUTCMonth()];
 }
 
-function monthRangeLabel(start: number, end: number): string {
-  const s = monthName(start);
-  const e = monthName(end);
+function monthRangeLabel(start: number, end: number, t: (key: string) => string): string {
+  const s = t(monthName(start));
+  const e = t(monthName(end));
   return s === e ? s : `${s} \u2013 ${e}`;
 }
 
@@ -138,6 +139,7 @@ export function JobTimeline({
   searchValue = "",
   onSearchChange,
 }: JobTimelineProps) {
+  const { t } = useI18n();
   const [pickerJobId, setPickerJobId] = useState<string | null>(null);
   const domain = buildDomain(jobs);
   const months = domain ? monthsInDomain(domain) : [];
@@ -167,8 +169,8 @@ export function JobTimeline({
         <input
           value={searchValue}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          placeholder="Search..."
-          aria-label="Search phases"
+          placeholder={t("Search...")}
+          aria-label={t("Search phases")}
           className="w-full bg-transparent outline-none text-[13px] font-semibold text-ink placeholder:text-ink-muted"
         />
       </div>
@@ -179,7 +181,7 @@ export function JobTimeline({
             className="btn h-9 gap-1.5 px-3 inline-flex items-center"
             onClick={onExpand}
           >
-            <Maximize2 size={14} /> Expand
+            <Maximize2 size={14} /> {t("Expand")}
           </button>
         )}
       </div>
@@ -193,9 +195,9 @@ export function JobTimeline({
         <div className="text-sm text-ink-muted">
           {jobs.length === 0
             ? searchValue.trim()
-              ? "No phases match your search."
-              : "Add a phase or add start dates to your jobs to see them on the timeline."
-            : "Add start dates to your jobs to see them on the timeline."}
+              ? t("No phases match your search.")
+              : t("Add a phase or add start dates to your jobs to see them on the timeline.")
+            : t("Add start dates to your jobs to see them on the timeline.")}
         </div>
       </div>
     );
@@ -211,7 +213,7 @@ export function JobTimeline({
             <div className="flex h-9 text-[12px] font-bold text-ink-muted">
               {months.map((month) => (
                 <div key={month} className="relative flex-1 pl-3 border-l" style={{ borderColor: "var(--border)" }}>
-                  {monthName(month)}
+                  {t(monthName(month))}
                 </div>
               ))}
             </div>
@@ -228,7 +230,7 @@ export function JobTimeline({
                     className="absolute -top-5 -translate-x-1/2 text-[10px] font-extrabold uppercase"
                     style={{ color: "var(--accent)" }}
                   >
-                    Today
+                    {t("Today")}
                   </span>
                 </div>
               </div>
@@ -278,12 +280,12 @@ export function JobTimeline({
                         color: textColor,
                         border: pickerJobId === job.id ? "2px solid var(--accent)" : "1px solid var(--border)",
                       }}
-                      aria-label={`Change color for ${job.category}`}
+                      aria-label={t("Change color for {category}", { category: t(job.category) })}
                     >
                       <Icon size={16} />
                     </button>
                     <div className="relative flex-1 min-w-0 group/label">
-                      <span className="text-[13px] font-extrabold truncate block">{job.category}</span>
+                      <span className="text-[13px] font-extrabold truncate block">{t(job.category)}</span>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -292,9 +294,9 @@ export function JobTimeline({
                         }}
                         className="absolute -bottom-3 left-0 z-10 opacity-0 group-hover/label:opacity-100 flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10.5px] font-bold text-accent bg-[var(--accent-soft)] transition-opacity"
                         tabIndex={-1}
-                        aria-label={`Add phase below ${job.category}`}
+                        aria-label={t("Add phase below {category}", { category: t(job.category) })}
                       >
-                        <Plus size={11} /> Add below
+                        <Plus size={11} /> {t("Add below")}
                       </button>
                     </div>
                   </div>
@@ -302,7 +304,7 @@ export function JobTimeline({
                   <div className="relative h-11">
                     {start == null ? (
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-muted">
-                        No date
+                        {t("No date")}
                       </span>
                     ) : safeEnd == null ? (
                       <>
@@ -314,7 +316,7 @@ export function JobTimeline({
                           className="absolute top-1/2 translate-x-4 -translate-y-1/2 text-[12px] font-bold text-ink-muted"
                           style={{ left: `${startPct}%` }}
                         >
-                          {monthName(start)}
+                          {t(monthName(start))}
                         </span>
                       </>
                     ) : (
@@ -331,7 +333,7 @@ export function JobTimeline({
                           boxShadow: "0 3px 10px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.10)",
                         }}
                       >
-                        <span className="truncate">{monthRangeLabel(start, safeEnd)}</span>
+                        <span className="truncate">{monthRangeLabel(start, safeEnd, t)}</span>
                       </div>
                     )}
                   </div>
@@ -349,7 +351,7 @@ export function JobTimeline({
                   border: "1.5px dashed var(--border)",
                 }}
               >
-                <Plus size={15} /> Add phase
+                <Plus size={15} /> {t("Add phase")}
               </button>
             )}
 
@@ -371,10 +373,10 @@ export function JobTimeline({
                     boxShadow: "var(--shadow-lg)",
                   }}
                 >
-                  <div className="label-mono mb-2">Bar Color</div>
+                  <div className="label-mono mb-2">{t("Bar Color")}</div>
                   <div className="space-y-1">
                     {JOB_COLOR_PALETTE.map((row) => (
-                      <div key={row.name} className="flex gap-1" title={row.name}>
+                      <div key={row.name} className="flex gap-1" title={t(row.name)}>
                         {row.shades.map((hex) => {
                           const selected = pickerJob.color === hex;
                           return (
@@ -391,7 +393,7 @@ export function JobTimeline({
                                 outline: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
                                 outlineOffset: selected ? "1px" : "0",
                               }}
-                              aria-label={`${row.name} ${hex}`}
+                              aria-label={t("{color} {hex}", { color: t(row.name), hex })}
                             />
                           );
                         })}
@@ -407,7 +409,7 @@ export function JobTimeline({
                     className="mt-2 w-full text-[11px] font-bold rounded-[10px] py-1.5 transition-colors text-ink-muted hover:text-accent"
                     style={{ border: "1px solid var(--border)", background: "var(--glass-2)" }}
                   >
-                    Reset to status color
+                    {t("Reset to status color")}
                   </button>
                 </div>
               </>

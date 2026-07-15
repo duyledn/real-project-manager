@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
   if (loading) return <div className="text-ink-muted text-sm">{t("Loading...")}</div>;
-  if (error) return <div className="panel border-red text-red p-4 text-sm">{error}</div>;
+  if (error) return <div className="panel border-red text-red p-4 text-sm">{t(error)}</div>;
   if (!project) return null;
 
   const base = `/projects/${project.id}`;
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-bold truncate">{sub?.companyName ?? t("Unassigned")}</div>
                       <div className="text-[11.5px] text-ink-muted">
-                        {b.jobCategory} -{" "}
+                        {t(b.jobCategory)} -{" "}
                         <span className="pill !px-2 !py-0.5" style={pillStyle(b.status)}>
                           {t(BID_STATUS_SHORT[b.status])}
                         </span>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
                     <AlertTriangle size={16} style={{ color: "var(--neg)" }} className="shrink-0" />
                     <span className="font-semibold flex-1 truncate">{sub!.companyName}</span>
                     <span className="text-ink-muted text-[11.5px] whitespace-nowrap">
-                      {t("Missing {docs}", { docs: comp.missing.join(", ") })}
+                      {t("Missing {docs}", { docs: comp.missing.map((doc) => t(doc)).join(", ") })}
                     </span>
                   </div>
                 ))}
@@ -216,15 +216,17 @@ export default function DashboardPage() {
 }
 
 function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number }) {
+  const { t } = useI18n();
+
   return (
     <div className="panel-2 p-[18px] sm:p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <div className="text-[14.5px] font-extrabold">Budget by category</div>
-          <div className="text-[11px] text-ink-muted">Awarded vs budget - bid spread per trade</div>
+          <div className="text-[14.5px] font-extrabold">{t("Budget by category")}</div>
+          <div className="text-[11px] text-ink-muted">{t("Awarded vs budget - bid spread per trade")}</div>
         </div>
         <span className="pill shrink-0" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>
-          {kMoney(estBudget)} total
+          {t("{amount} total", { amount: kMoney(estBudget) })}
         </span>
       </div>
 
@@ -234,7 +236,7 @@ function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number 
             <tr className="border-b" style={{ borderColor: "var(--border)" }}>
               {["Category", "Bids", "Bid range", "Budget", "Progress", "Status"].map((h) => (
                 <th key={h} className={`label-mono py-2 ${h === "Category" ? "text-left" : h === "Bids" ? "text-center" : "text-right"}`}>
-                  {h}
+                  {t(h)}
                 </th>
               ))}
             </tr>
@@ -243,7 +245,7 @@ function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number 
             {jobs.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-6 text-center text-sm text-ink-muted">
-                  Add jobs to see budget breakdown
+                  {t("Add jobs to see budget breakdown")}
                 </td>
               </tr>
             ) : (
@@ -257,6 +259,7 @@ function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number 
 }
 
 function BudgetRow({ job, index }: { job: Job; index: number }) {
+  const { t } = useI18n();
   const color = PAL[index % PAL.length];
   const nonZeroBids = job.bidders.filter((b) => b.bidPrice > 0);
   const lowBid = nonZeroBids.length ? Math.min(...nonZeroBids.map((b) => b.bidPrice)) : 0;
@@ -276,7 +279,7 @@ function BudgetRow({ job, index }: { job: Job; index: number }) {
             className="h-[9px] w-[9px] rounded-full"
             style={{ background: color, boxShadow: `0 0 0 3px ${color}22` }}
           />
-          <span className="text-[12.5px] font-bold">{job.category}</span>
+          <span className="text-[12.5px] font-bold">{t(job.category)}</span>
         </div>
       </td>
       <td className="py-3 text-center font-mono text-[11.5px] text-ink-muted">{job.bidders.length}</td>
@@ -305,11 +308,11 @@ function BudgetRow({ job, index }: { job: Job; index: number }) {
       <td className="py-3 text-right">
         {statusBid ? (
           <span className="pill !px-2 !py-1" style={pillStyle(statusBid.status)}>
-            {BID_STATUS_SHORT[statusBid.status]}
+            {t(BID_STATUS_SHORT[statusBid.status])}
           </span>
         ) : (
           <span className="text-[11.5px] font-semibold" style={{ color: statusColor }}>
-            No bids
+            {t("No bids")}
           </span>
         )}
       </td>

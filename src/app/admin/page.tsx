@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Shield, Building2, Crown, FolderKanban, Users } from "lucide-react";
 import type { PublicUser } from "@/lib/types";
 import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
 
 interface AdminAccess {
   user: PublicUser;
@@ -32,6 +33,7 @@ interface AdminData {
 
 export default function AdminPage() {
   const { user, loading: sessionLoading } = useSession();
+  const { t } = useI18n();
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +55,9 @@ export default function AdminPage() {
     return (
       <main className="max-w-3xl mx-auto px-5 py-16 text-center">
         <Shield size={28} className="mx-auto text-ink-muted mb-3" />
-        <h1 className="font-display font-extrabold text-2xl">Admins only</h1>
-        <p className="text-ink-muted text-sm mt-2">This console is restricted to the workspace administrator.</p>
-        <Link href="/" className="btn mt-5 inline-flex gap-1.5"><ArrowLeft size={14} /> Back home</Link>
+        <h1 className="font-display font-extrabold text-2xl">{t("Admins only")}</h1>
+        <p className="text-ink-muted text-sm mt-2">{t("This console is restricted to the workspace administrator.")}</p>
+        <Link href="/" className="btn mt-5 inline-flex gap-1.5"><ArrowLeft size={14} /> {t("Back home")}</Link>
       </main>
     );
   }
@@ -63,28 +65,28 @@ export default function AdminPage() {
   return (
     <main className="max-w-5xl mx-auto px-5 py-8">
       <div className="mb-5">
-        <Link href="/" className="btn gap-1.5"><ArrowLeft size={14} /> All projects</Link>
+        <Link href="/" className="btn gap-1.5"><ArrowLeft size={14} /> {t("All projects")}</Link>
       </div>
       <header className="panel p-6 mb-6 flex items-center gap-3">
         <div className="w-11 h-11 rounded-[13px] flex items-center justify-center shrink-0" style={{ background: "var(--accent-soft)" }}>
           <Shield size={22} className="text-accent" />
         </div>
         <div>
-          <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">Administrator</div>
-          <h1 className="font-display font-extrabold text-3xl leading-none">Admin console</h1>
+          <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">{t("Administrator")}</div>
+          <h1 className="font-display font-extrabold text-3xl leading-none">{t("Admin console")}</h1>
         </div>
       </header>
 
-      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{error}</div>}
+      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{t(error)}</div>}
 
       {loading ? (
-        <div className="text-ink-muted text-sm">Loading…</div>
+        <div className="text-ink-muted text-sm">{t("Loading…")}</div>
       ) : data ? (
         <>
           <div className="grid grid-cols-3 gap-3.5 mb-6">
-            <Stat icon={Users} label="Users" value={data.totalUsers} />
-            <Stat icon={Building2} label="Companies" value={data.totalCompanies} />
-            <Stat icon={FolderKanban} label="Projects" value={data.totalProjects} />
+            <Stat icon={Users} label={t("Users")} value={data.totalUsers} />
+            <Stat icon={Building2} label={t("Companies")} value={data.totalCompanies} />
+            <Stat icon={FolderKanban} label={t("Projects")} value={data.totalProjects} />
           </div>
 
           <div className="space-y-5">
@@ -102,13 +104,13 @@ export default function AdminPage() {
                       </span>
                     )}
                     <span className="pill" style={{ background: "var(--glass-2)", border: "1px solid var(--border)", color: "var(--ink-muted)" }}>
-                      <Users size={12} /> {c.memberCount + 1} people
+                      <Users size={12} /> {t("{n} people", { n: c.memberCount + 1 })}
                     </span>
                   </div>
                 </div>
 
                 {c.projects.length === 0 ? (
-                  <p className="text-sm text-ink-muted">No projects.</p>
+                  <p className="text-sm text-ink-muted">{t("No projects.")}</p>
                 ) : (
                   <div className="rounded-[14px] overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                     {c.projects.map((p) => (
@@ -124,7 +126,7 @@ export default function AdminPage() {
                                   ? { background: "var(--accent-soft)", color: "var(--accent)" }
                                   : { background: "var(--glass-2)", border: "1px solid var(--border)", color: "var(--text)" }}
                               >
-                                @{a.user.tag} · {a.level}
+                                @{a.user.tag} · {t(a.level)}
                               </span>
                             ))}
                           </div>

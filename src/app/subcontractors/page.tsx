@@ -16,11 +16,13 @@ import { useSubcontractors } from "@/lib/useSubcontractors";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { makeSubcontractorInput } from "@/lib/defaults";
 import { subCompliance, initialsOf } from "@/lib/bidStatus";
+import { useI18n } from "@/lib/i18n";
 import { ResizableTh } from "@/components/ResizableTh";
 import type { SubcontractorWithJobs, SubcontractorInput } from "@/lib/types";
 
 export default function SubcontractorsPage() {
   const { subs, loading, error, create, update, remove } = useSubcontractors();
+  const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -60,11 +62,11 @@ export default function SubcontractorsPage() {
       {/* Back navigation */}
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <Link href="/" className="btn gap-1.5">
-          <ArrowLeft size={14} /> All projects
+          <ArrowLeft size={14} /> {t("All projects")}
         </Link>
         {fromId && (
           <Link href={`/projects/${fromId}`} className="btn gap-1.5">
-            <Building2 size={14} /> Back to {fromName || "project"}
+            <Building2 size={14} /> {t("Back to {name}", { name: fromName || t("project") })}
           </Link>
         )}
       </div>
@@ -72,33 +74,32 @@ export default function SubcontractorsPage() {
       <header className="panel mb-6 p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent mb-2">
-            Shared across every project
+            {t("Shared across every project")}
           </div>
-          <h1 className="font-display font-extrabold text-4xl leading-none">Subcontractor Database</h1>
+          <h1 className="font-display font-extrabold text-4xl leading-none">{t("Subcontractor Database")}</h1>
           <p className="text-ink-muted text-sm mt-2 max-w-lg">
-            Everyone you work with, in one spreadsheet — phone, representative, and compliance at a glance.
-            Their info auto-fills bid-request emails and links to every job they&rsquo;re engaged on.
+            {t("Everyone you work with, in one spreadsheet — phone, representative, and compliance at a glance. Their info auto-fills bid-request emails and links to every job they're engaged on.")}
           </p>
         </div>
         <div className="flex flex-col items-end gap-3 shrink-0">
           <button onClick={addSub} disabled={creating} className="btn btn-blue flex items-center gap-2">
-            <Plus size={15} /> {creating ? "Adding…" : "Add subcontractor"}
+            <Plus size={15} /> {creating ? t("Adding…") : t("Add subcontractor")}
           </button>
           {subs.length > 0 && (
             <div className="text-[11.5px] text-ink-muted">
-              <span className="font-bold text-green">{compliantCount}</span> of {subs.length} fully compliant
+              <span className="font-bold text-green">{compliantCount}</span> {t("of {total} fully compliant", { total: subs.length })}
             </div>
           )}
         </div>
       </header>
 
-      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{error}</div>}
+      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{t(error)}</div>}
 
       {loading ? (
-        <div className="text-ink-muted text-sm">Loading…</div>
+        <div className="text-ink-muted text-sm">{t("Loading…")}</div>
       ) : subs.length === 0 ? (
         <div className="panel p-10 text-center text-ink-muted">
-          No subcontractors yet. Add your first to start building bids.
+          {t("No subcontractors yet. Add your first to start building bids.")}
         </div>
       ) : (
         <div className="panel overflow-hidden">
@@ -117,12 +118,12 @@ export default function SubcontractorsPage() {
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
                   <th />
-                  <ResizableTh label="Company" col="company" startResize={startResize} />
-                  <ResizableTh label="Representative" col="rep" startResize={startResize} />
-                  <ResizableTh label="Phone" col="phone" startResize={startResize} />
-                  <ResizableTh label="Email" col="email" startResize={startResize} />
-                  <ResizableTh label="Compliance" col="comp" startResize={startResize} />
-                  <th className="text-center label-mono p-2.5">Jobs</th>
+                  <ResizableTh label={t("Company")} col="company" startResize={startResize} />
+                  <ResizableTh label={t("Representative")} col="rep" startResize={startResize} />
+                  <ResizableTh label={t("Phone")} col="phone" startResize={startResize} />
+                  <ResizableTh label={t("Email")} col="email" startResize={startResize} />
+                  <ResizableTh label={t("Compliance")} col="comp" startResize={startResize} />
+                  <th className="text-center label-mono p-2.5">{t("Jobs")}</th>
                   <th />
                 </tr>
               </thead>
@@ -168,6 +169,7 @@ function SubRow({
   focusId: string | null;
   onFocused: () => void;
 }) {
+  const { t } = useI18n();
   const [form, setForm] = useState<SubcontractorInput>(toInput(sub));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -201,7 +203,7 @@ function SubRow({
         style={{ background: open ? "var(--glass-2)" : undefined }}
       >
         <td className="p-1.5 text-center">
-          <button onClick={onToggle} className="icon-btn" aria-label="Toggle details">
+          <button onClick={onToggle} className="icon-btn" aria-label={t("Toggle details")}>
             <ChevronDown size={15} className={`transition-transform ${open ? "" : "-rotate-90"}`} />
           </button>
         </td>
@@ -223,13 +225,13 @@ function SubRow({
                   onAddRow();
                 }
               }}
-              placeholder="Company name"
+              placeholder={t("Company name")}
               className="cell-input font-semibold"
             />
           </div>
         </td>
         <td className="p-1.5">
-          <input value={form.representativeName} onChange={(e) => patch("representativeName", e.target.value)} placeholder="Contact name" className="cell-input" />
+          <input value={form.representativeName} onChange={(e) => patch("representativeName", e.target.value)} placeholder={t("Contact name")} className="cell-input" />
         </td>
         <td className="p-1.5">
           <input value={form.phone} onChange={(e) => patch("phone", e.target.value)} placeholder="(555) 555-5555" className="cell-input font-mono text-[12.5px]" />
@@ -248,7 +250,7 @@ function SubRow({
           )}
         </td>
         <td className="p-1.5 text-center">
-          <button onClick={() => onRemove(sub.id)} className="icon-btn" aria-label="Delete subcontractor">
+          <button onClick={() => onRemove(sub.id)} className="icon-btn" aria-label={t("Delete subcontractor")}>
             <Trash2 size={13} />
           </button>
         </td>
@@ -263,13 +265,13 @@ function SubRow({
               style={{ background: "var(--surface-solid)", border: "1px solid var(--border)", boxShadow: "var(--shadow)" }}
             >
             <div className="grid sm:grid-cols-3 gap-4 mb-4">
-              <DetailField label="Worker's Comp" value={form.workersComp} onChange={(v) => patch("workersComp", v)} placeholder="Link or expiry date" ok={!!form.workersComp.trim()} />
-              <DetailField label="W-9" value={form.w9} onChange={(v) => patch("w9", v)} placeholder="Link or status" ok={!!form.w9.trim()} />
-              <DetailField label="Business License" value={form.businessLicense} onChange={(v) => patch("businessLicense", v)} placeholder="Link or number" ok={!!form.businessLicense.trim()} />
+              <DetailField label={t("Worker's Comp")} value={form.workersComp} onChange={(v) => patch("workersComp", v)} placeholder={t("Link or expiry date")} ok={!!form.workersComp.trim()} />
+                  <DetailField label={t("W-9")} value={form.w9} onChange={(v) => patch("w9", v)} placeholder={t("Link or status")} ok={!!form.w9.trim()} />
+              <DetailField label={t("Business License")} value={form.businessLicense} onChange={(v) => patch("businessLicense", v)} placeholder={t("Link or number")} ok={!!form.businessLicense.trim()} />
             </div>
-            <div className="label-mono mb-2">Related jobs</div>
+            <div className="label-mono mb-2">{t("Related jobs")}</div>
             {sub.relatedJobs.length === 0 ? (
-              <p className="text-sm text-ink-muted">Not assigned to any project jobs yet.</p>
+              <p className="text-sm text-ink-muted">{t("Not assigned to any project jobs yet.")}</p>
             ) : (
               <div className="rounded-[14px] overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                 {sub.relatedJobs.map((j, i) => (
@@ -283,7 +285,7 @@ function SubRow({
                       <span className="text-ink-muted"> · {j.jobCategory}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-[11px] text-ink-muted font-medium">{j.status}</span>
+                      <span className="text-[11px] text-ink-muted font-medium">{t(j.status)}</span>
                       <ExternalLink size={13} className="text-ink-muted opacity-0 group-hover:opacity-100" />
                     </span>
                   </Link>
@@ -299,16 +301,17 @@ function SubRow({
 }
 
 function ComplianceBadge({ ok, missing }: { ok: boolean; missing: string[] }) {
+  const { t } = useI18n();
   if (ok) {
     return (
       <span className="pill" style={{ color: "var(--pos)", background: "rgba(90,161,94,0.16)" }}>
-        <ShieldCheck size={13} /> Compliant
+        <ShieldCheck size={13} /> {t("Compliant")}
       </span>
     );
   }
   return (
-    <span className="pill" title={`Missing ${missing.join(", ")}`} style={{ color: "var(--warn)", background: "rgba(201,138,46,0.16)" }}>
-      <ShieldAlert size={13} /> Missing {missing.length}
+    <span className="pill" title={t("Missing {docs}", { docs: missing.map((doc) => t(doc)).join(", ") })} style={{ color: "var(--warn)", background: "rgba(201,138,46,0.16)" }}>
+      <ShieldAlert size={13} /> {t("Missing {n}", { n: missing.length })}
     </span>
   );
 }

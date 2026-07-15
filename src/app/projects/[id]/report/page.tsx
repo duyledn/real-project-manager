@@ -19,22 +19,24 @@ import { useCurrency } from "@/lib/currency";
 import { useTheme } from "@/lib/theme";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 
 export default function ReportPage() {
   const { project, loading, error } = useProjectContext();
   const { fmtMoney, currency } = useCurrency();
+  const { t, lang } = useI18n();
   const { theme } = useTheme(); // re-render the chart colors when the theme flips
 
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
-  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
-  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
+  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">{t("Loading…")}</div>;
+  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{t(error)}</div>;
   if (!project || !analysis) return null;
 
   const { returns, proForma, exit } = analysis;
   const profitPositive = returns.totalProfit >= 0;
   const renoTotal = totalRenovationCost(project);
-  const generatedOn = new Date().toLocaleDateString(undefined, {
+  const generatedOn = new Date().toLocaleDateString(lang === "vi" ? "vi-VN" : undefined, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -75,12 +77,10 @@ export default function ReportPage() {
       {/* Export bar — hidden in the printed PDF */}
       <div className="no-print panel p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
         <div className="text-sm text-ink-muted">
-          A clean, investor-ready summary. Pick your currency at the top, then export.
-          Choose <span className="font-semibold text-ink">&ldquo;Save as PDF&rdquo;</span> as the
-          destination in the print dialog.
+          {t("A clean, investor-ready summary. Pick your currency at the top, then export. Choose")}{" "}<span className="font-semibold text-ink">&ldquo;{t("Save as PDF")}&rdquo;</span>{" "}{t("as the destination in the print dialog.")}
         </div>
         <button onClick={() => window.print()} className="btn btn-blue inline-flex items-center gap-2 shrink-0">
-          <Printer size={15} /> Export PDF
+          <Printer size={15} /> {t("Export PDF")}
         </button>
       </div>
 
@@ -89,61 +89,60 @@ export default function ReportPage() {
         {/* Cover / header */}
         <header className="print-avoid-break panel p-6">
           <div className="font-mono text-[11px] tracking-widest text-blueprint uppercase mb-2">
-            Investment Summary · Prepared for Investors &amp; Shareholders
+            {t("Investment Summary · Prepared for Investors & Shareholders")}
           </div>
           <h1 className="font-display font-extrabold text-4xl leading-none mb-3">{project.name}</h1>
           <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs text-ink-muted">
-            <span>{project.investmentStrategy || "Buy-Rehab-Hold Rental"}</span>
-            <span>{project.holdYears}-Year Hold</span>
-            <span>Prepared {generatedOn}</span>
-            <span>Figures in {currency}</span>
+            <span>{project.investmentStrategy || t("Buy-Rehab-Hold Rental")}</span>
+            <span>{t("{years}-Year Hold", { years: project.holdYears })}</span>
+            <span>{t("Prepared {date}", { date: generatedOn })}</span>
+            <span>{t("Figures in {currency}", { currency })}</span>
           </div>
         </header>
 
         {/* Executive summary KPIs */}
         <section className="print-avoid-break">
-          <ReportHeading num="01" title="Executive Summary" />
+          <ReportHeading num="01" title={t("Executive Summary")} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi label="IRR (levered)" value={fmtPercent(returns.irr)} accent={(returns.irr ?? 0) >= 0 ? "green" : "red"} big />
-            <Kpi label="Equity Multiple" value={fmtMultiple(returns.equityMultiple)} big />
-            <Kpi label="Total Profit" value={fmtMoney(returns.totalProfit)} accent={profitPositive ? "green" : "red"} big />
-            <Kpi label="Cash Invested" value={fmtMoney(returns.cashInvested)} big />
-            <Kpi label="Cash-on-Cash (Yr 1)" value={fmtPercent(returns.cashOnCashYear1)} />
-            <Kpi label="Avg Cash-on-Cash" value={fmtPercent(returns.averageCashOnCash)} />
-            <Kpi label="Cap Rate (Yr 1)" value={fmtPercent(returns.capRateYear1)} />
-            <Kpi label="DSCR (Yr 1)" value={fmtNumber(returns.dscrYear1)} accent={(returns.dscrYear1 ?? 0) >= 1.25 ? "green" : (returns.dscrYear1 ?? 0) >= 1 ? "amber" : "red"} />
+            <Kpi label={t("IRR (levered)")} value={fmtPercent(returns.irr)} accent={(returns.irr ?? 0) >= 0 ? "green" : "red"} big />
+            <Kpi label={t("Equity Multiple")} value={fmtMultiple(returns.equityMultiple)} big />
+            <Kpi label={t("Total Profit")} value={fmtMoney(returns.totalProfit)} accent={profitPositive ? "green" : "red"} big />
+            <Kpi label={t("Cash Invested")} value={fmtMoney(returns.cashInvested)} big />
+            <Kpi label={t("Cash-on-Cash (Yr 1)")} value={fmtPercent(returns.cashOnCashYear1)} />
+            <Kpi label={t("Avg Cash-on-Cash")} value={fmtPercent(returns.averageCashOnCash)} />
+            <Kpi label={t("Cap Rate (Yr 1)")} value={fmtPercent(returns.capRateYear1)} />
+            <Kpi label={t("DSCR (Yr 1)")} value={fmtNumber(returns.dscrYear1)} accent={(returns.dscrYear1 ?? 0) >= 1.25 ? "green" : (returns.dscrYear1 ?? 0) >= 1 ? "amber" : "red"} />
           </div>
           <div className="mt-3 panel-2 p-4 flex flex-wrap items-baseline gap-3" style={{ borderColor: profitPositive ? "var(--pos)" : "var(--neg)" }}>
             <span className={`font-display font-extrabold text-lg uppercase ${profitPositive ? "text-green" : "text-red"}`}>
-              {profitPositive ? "Projected Total Profit" : "Projected Total Loss"}
+              {t(profitPositive ? "Projected Total Profit" : "Projected Total Loss")}
             </span>
             <span className={`font-mono font-bold text-2xl ${profitPositive ? "text-green" : "text-red"}`}>
               {fmtMoney(Math.abs(returns.totalProfit))}
             </span>
             <span className="font-mono text-[11px] text-ink-muted w-full">
-              Over {project.holdYears} years · {fmtMoney(returns.totalCashFlow)} cumulative cash flow +{" "}
-              {fmtMoney(exit.netSaleProceeds)} net sale proceeds, less {fmtMoney(returns.cashInvested)} equity invested.
+              {t("Over {years} years · {cashFlow} cumulative cash flow + {saleProceeds} net sale proceeds, less {invested} equity invested.", { years: project.holdYears, cashFlow: fmtMoney(returns.totalCashFlow), saleProceeds: fmtMoney(exit.netSaleProceeds), invested: fmtMoney(returns.cashInvested) })}
             </span>
           </div>
         </section>
 
         {/* Capitalization / sources & uses */}
         <section className="print-avoid-break">
-          <ReportHeading num="02" title="Capitalization" />
+          <ReportHeading num="02" title={t("Capitalization")} />
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="panel divide-y divide-hair overflow-hidden">
-              <RowKV label="Purchase Price" value={fmtMoney(project.purchasePrice)} />
-              <RowKV label="Closing Costs" value={fmtMoney(project.closingCosts)} />
-              <RowKV label="Renovation Budget" value={fmtMoney(renoTotal)} />
-              <RowKV label="Total Project Cost" value={fmtMoney(returns.totalProjectCost)} bold />
+              <RowKV label={t("Purchase Price")} value={fmtMoney(project.purchasePrice)} />
+              <RowKV label={t("Closing Costs")} value={fmtMoney(project.closingCosts)} />
+              <RowKV label={t("Renovation Budget")} value={fmtMoney(renoTotal)} />
+              <RowKV label={t("Total Project Cost")} value={fmtMoney(returns.totalProjectCost)} bold />
             </div>
             <div className="panel divide-y divide-hair overflow-hidden">
-              <RowKV label="Debt (Borrowed)" value={fmtMoney(project.borrowed)} />
-              <RowKV label="Equity (Cash Invested)" value={fmtMoney(returns.cashInvested)} />
-              <RowKV label="Interest Rate" value={`${fmtNumber(project.interestRate, 2)}%`} />
+              <RowKV label={t("Debt (Borrowed)")} value={fmtMoney(project.borrowed)} />
+              <RowKV label={t("Equity (Cash Invested)")} value={fmtMoney(returns.cashInvested)} />
+              <RowKV label={t("Interest Rate")} value={`${fmtNumber(project.interestRate, 2)}%`} />
               <RowKV
-                label="Loan Structure"
-                value={project.amortize ? `Amortizing P&I · ${project.loanTermYears} yr` : "Interest-only"}
+                label={t("Loan Structure")}
+                value={project.amortize ? t("Amortizing P&I · {years} yr", { years: project.loanTermYears }) : t("Interest-only")}
               />
             </div>
           </div>
@@ -151,23 +150,23 @@ export default function ReportPage() {
 
         {/* Renovation scope */}
         <section className="print-avoid-break">
-          <ReportHeading num="03" title="Renovation Scope & Budget" />
+          <ReportHeading num="03" title={t("Renovation Scope & Budget")} />
           <div className="panel overflow-hidden">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
-                  <th className="text-left label-mono p-2.5">Item</th>
-                  <th className="text-left label-mono p-2.5">Category</th>
-                  <th className="text-right label-mono p-2.5 w-20">Qty</th>
-                  <th className="text-right label-mono p-2.5 w-28">Unit Cost</th>
-                  <th className="text-right label-mono p-2.5 w-28">Total</th>
+                  <th className="text-left label-mono p-2.5">{t("Item")}</th>
+                  <th className="text-left label-mono p-2.5">{t("Category")}</th>
+                  <th className="text-right label-mono p-2.5 w-20">{t("Qty")}</th>
+                  <th className="text-right label-mono p-2.5 w-28">{t("Unit Cost")}</th>
+                  <th className="text-right label-mono p-2.5 w-28">{t("Total")}</th>
                 </tr>
               </thead>
               <tbody>
                 {project.items.map((i) => (
                   <tr key={i.id} className="border-b border-hair last:border-0">
                     <td className="p-2.5">{i.description || "—"}</td>
-                    <td className="p-2.5 text-ink-muted">{i.category}</td>
+                    <td className="p-2.5 text-ink-muted">{t(i.category)}</td>
                     <td className="p-2.5 font-mono text-right">{fmtNumber(i.qty, 0)}</td>
                     <td className="p-2.5 font-mono text-right">{fmtMoney(i.unitCost)}</td>
                     <td className="p-2.5 font-mono text-right font-semibold">{fmtMoney(i.qty * i.unitCost)}</td>
@@ -176,7 +175,7 @@ export default function ReportPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-[1.5px] border-ink">
-                  <td colSpan={4} className="p-2.5 label-mono font-semibold">Renovation Total</td>
+                  <td colSpan={4} className="p-2.5 label-mono font-semibold">{t("Renovation Total")}</td>
                   <td className="p-2.5 font-mono font-bold text-right">{fmtMoney(renoTotal)}</td>
                 </tr>
               </tfoot>
@@ -186,31 +185,31 @@ export default function ReportPage() {
 
         {/* Income & expenses with frequency */}
         <section className="print-avoid-break">
-          <ReportHeading num="04" title="Income & Operating Expenses" />
+          <ReportHeading num="04" title={t("Income & Operating Expenses")} />
           <div className="grid lg:grid-cols-2 gap-3">
-            <FreqTable title="Revenue Sources" rows={project.incomes} fmtMoney={fmtMoney} />
-            <FreqTable title="Operating Expenses" rows={project.expenses} fmtMoney={fmtMoney} />
+            <FreqTable title={t("Revenue Sources")} rows={project.incomes} fmtMoney={fmtMoney} />
+            <FreqTable title={t("Operating Expenses")} rows={project.expenses} fmtMoney={fmtMoney} />
           </div>
         </section>
 
         {/* Assumptions */}
         <section className="print-avoid-break">
-          <ReportHeading num="05" title="Key Assumptions" />
+          <ReportHeading num="05" title={t("Key Assumptions")} />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi label="Hold Period" value={`${project.holdYears} yr`} />
-            <Kpi label="Rent Growth" value={`${fmtNumber(project.rentGrowthRate, 1)}%/yr`} />
-            <Kpi label="Expense Growth" value={`${fmtNumber(project.expenseGrowthRate, 1)}%/yr`} />
-            <Kpi label="Vacancy Allowance" value={`${fmtNumber(project.vacancyRate, 1)}%`} />
-            <Kpi label="Appreciation" value={`${fmtNumber(project.appreciationRate, 1)}%/yr`} />
-            <Kpi label="Selling Costs" value={`${fmtNumber(project.sellingCostPercent, 1)}%`} />
-            <Kpi label="Marginal Tax Rate" value={`${fmtNumber(project.taxRate, 0)}%`} />
-            <Kpi label="Depreciation Life" value={`${fmtNumber(project.depreciationLifeYears, 1)} yr`} />
+            <Kpi label={t("Hold Period")} value={t("{n} yr", { n: project.holdYears })} />
+            <Kpi label={t("Rent Growth")} value={t("{rate}%/yr", { rate: fmtNumber(project.rentGrowthRate, 1) })} />
+            <Kpi label={t("Expense Growth")} value={t("{rate}%/yr", { rate: fmtNumber(project.expenseGrowthRate, 1) })} />
+            <Kpi label={t("Vacancy Allowance")} value={`${fmtNumber(project.vacancyRate, 1)}%`} />
+            <Kpi label={t("Appreciation")} value={t("{rate}%/yr", { rate: fmtNumber(project.appreciationRate, 1) })} />
+            <Kpi label={t("Selling Costs")} value={`${fmtNumber(project.sellingCostPercent, 1)}%`} />
+            <Kpi label={t("Marginal Tax Rate")} value={`${fmtNumber(project.taxRate, 0)}%`} />
+            <Kpi label={t("Depreciation Life")} value={t("{n} yr", { n: fmtNumber(project.depreciationLifeYears, 1) })} />
           </div>
         </section>
 
         {/* Earnings chart */}
         <section className="print-avoid-break print-page-break">
-          <ReportHeading num="06" title="Earnings & Cash Flow by Year" />
+          <ReportHeading num="06" title={t("Earnings & Cash Flow by Year")} />
           <div className="panel p-5">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -227,7 +226,7 @@ export default function ReportPage() {
                   <ReferenceLine y={0} stroke={COL.axis} />
                   <Bar dataKey="EBITDA" fill={COL.ebitda} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                   <Bar dataKey="EBIT" fill={COL.ebit} radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="Cash Flow" fill={COL.cash} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="Cash Flow" name={t("Cash Flow")} fill={COL.cash} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -236,30 +235,30 @@ export default function ReportPage() {
 
         {/* Pro forma */}
         <section className="print-avoid-break">
-          <ReportHeading num="07" title="Operating Pro Forma" />
+          <ReportHeading num="07" title={t("Operating Pro Forma")} />
           <div className="panel overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
-                  <th className="text-left label-mono p-2.5">Line</th>
+                  <th className="text-left label-mono p-2.5">{t("Line")}</th>
                   {proForma.map((y) => (
-                    <th key={y.year} className="text-right label-mono p-2.5">Year {y.year}</th>
+                    <th key={y.year} className="text-right label-mono p-2.5">{t("Year {year}", { year: y.year })}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <PFRow label="Gross Income" values={proForma.map((y) => y.grossIncome)} fmtMoney={fmtMoney} />
-                <PFRow label="Vacancy Loss" values={proForma.map((y) => -y.vacancyLoss)} muted fmtMoney={fmtMoney} />
-                <PFRow label="Effective Gross Income" values={proForma.map((y) => y.effectiveGrossIncome)} fmtMoney={fmtMoney} />
-                <PFRow label="Operating Expenses" values={proForma.map((y) => -y.operatingExpenses)} muted fmtMoney={fmtMoney} />
-                <PFRow label="NOI / EBITDA" values={proForma.map((y) => y.ebitda)} bold fmtMoney={fmtMoney} />
-                <PFRow label="Depreciation" values={proForma.map((y) => -y.depreciation)} muted fmtMoney={fmtMoney} />
-                <PFRow label="EBIT" values={proForma.map((y) => y.ebit)} bold fmtMoney={fmtMoney} />
-                <PFRow label="Interest Expense" values={proForma.map((y) => -y.interestExpense)} muted fmtMoney={fmtMoney} />
-                <PFRow label="Pre-Tax Income (EBT)" values={proForma.map((y) => y.ebt)} fmtMoney={fmtMoney} />
-                <PFRow label="Tax" values={proForma.map((y) => -y.tax)} muted fmtMoney={fmtMoney} />
-                <PFRow label="Net Income" values={proForma.map((y) => y.netIncome)} bold fmtMoney={fmtMoney} />
-                <PFRow label="Levered Cash Flow" values={proForma.map((y) => y.cashFlow)} highlight fmtMoney={fmtMoney} />
+                <PFRow label={t("Gross Income")} values={proForma.map((y) => y.grossIncome)} fmtMoney={fmtMoney} />
+                <PFRow label={t("Vacancy Loss")} values={proForma.map((y) => -y.vacancyLoss)} muted fmtMoney={fmtMoney} />
+                <PFRow label={t("Effective Gross Income")} values={proForma.map((y) => y.effectiveGrossIncome)} fmtMoney={fmtMoney} />
+                <PFRow label={t("Operating Expenses")} values={proForma.map((y) => -y.operatingExpenses)} muted fmtMoney={fmtMoney} />
+                <PFRow label={t("NOI / EBITDA")} values={proForma.map((y) => y.ebitda)} bold fmtMoney={fmtMoney} />
+                <PFRow label={t("Depreciation")} values={proForma.map((y) => -y.depreciation)} muted fmtMoney={fmtMoney} />
+                <PFRow label={t("EBIT")} values={proForma.map((y) => y.ebit)} bold fmtMoney={fmtMoney} />
+                <PFRow label={t("Interest Expense")} values={proForma.map((y) => -y.interestExpense)} muted fmtMoney={fmtMoney} />
+                <PFRow label={t("Pre-Tax Income (EBT)")} values={proForma.map((y) => y.ebt)} fmtMoney={fmtMoney} />
+                <PFRow label={t("Tax")} values={proForma.map((y) => -y.tax)} muted fmtMoney={fmtMoney} />
+                <PFRow label={t("Net Income")} values={proForma.map((y) => y.netIncome)} bold fmtMoney={fmtMoney} />
+                <PFRow label={t("Levered Cash Flow")} values={proForma.map((y) => y.cashFlow)} highlight fmtMoney={fmtMoney} />
               </tbody>
             </table>
           </div>
@@ -267,24 +266,20 @@ export default function ReportPage() {
 
         {/* Exit */}
         <section className="print-avoid-break">
-          <ReportHeading num="08" title={`Exit Summary — End of Year ${project.holdYears}`} />
+          <ReportHeading num="08" title={t("Exit Summary — End of Year {year}", { year: project.holdYears })} />
           <div className="panel divide-y divide-hair overflow-hidden">
-            <RowKV label="Projected Sale Price" value={fmtMoney(exit.exitValue)} />
-            <RowKV label="Selling Costs" value={fmtMoney(-exit.sellingCosts)} muted />
-            <RowKV label="Loan Payoff" value={fmtMoney(-exit.loanPayoff)} muted />
-            <RowKV label="Net Sale Proceeds" value={fmtMoney(exit.netSaleProceeds)} bold />
+            <RowKV label={t("Projected Sale Price")} value={fmtMoney(exit.exitValue)} />
+            <RowKV label={t("Selling Costs")} value={fmtMoney(-exit.sellingCosts)} muted />
+            <RowKV label={t("Loan Payoff")} value={fmtMoney(-exit.loanPayoff)} muted />
+            <RowKV label={t("Net Sale Proceeds")} value={fmtMoney(exit.netSaleProceeds)} bold />
           </div>
         </section>
 
         {/* Disclaimer */}
         <footer className="print-avoid-break text-[10.5px] text-ink-muted leading-relaxed border-t border-hair pt-4">
-          <p className="mb-1 font-semibold uppercase tracking-wider">Disclaimer</p>
+          <p className="mb-1 font-semibold uppercase tracking-wider">{t("Disclaimer")}</p>
           <p>
-            This report is a forward-looking projection generated from user-supplied assumptions and is provided for
-            informational purposes only. Actual results will vary. Figures are shown before capital-gains tax and
-            depreciation recapture at sale; rental-loss deductibility depends on passive-activity rules and individual
-            circumstances. This is not investment, tax, or legal advice — consult qualified professionals before making
-            any investment decision.
+            {t("This report is a forward-looking projection generated from user-supplied assumptions and is provided for informational purposes only. Actual results will vary. Figures are shown before capital-gains tax and depreciation recapture at sale; rental-loss deductibility depends on passive-activity rules and individual circumstances. This is not investment, tax, or legal advice — consult qualified professionals before making any investment decision.")}
           </p>
         </footer>
       </article>
@@ -347,6 +342,7 @@ function FreqTable({
   rows: { id: string; label: string; amount: number; frequency: keyof typeof FREQUENCY_FACTORS }[];
   fmtMoney: (n: number | null | undefined) => string;
 }) {
+  const { t } = useI18n();
   const annualTotal = rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0);
   return (
     <div className="panel overflow-hidden">
@@ -356,9 +352,9 @@ function FreqTable({
             <th className="text-left label-mono p-2.5" colSpan={3}>{title}</th>
           </tr>
           <tr className="border-b border-hair">
-            <th className="text-left label-mono p-2.5">Item</th>
-            <th className="text-right label-mono p-2.5 w-32">Per Period</th>
-            <th className="text-right label-mono p-2.5 w-28">Annualized</th>
+            <th className="text-left label-mono p-2.5">{t("Item")}</th>
+            <th className="text-right label-mono p-2.5 w-32">{t("Per Period")}</th>
+            <th className="text-right label-mono p-2.5 w-28">{t("Annualized")}</th>
           </tr>
         </thead>
         <tbody>
@@ -366,7 +362,7 @@ function FreqTable({
             <tr key={r.id} className="border-b border-hair last:border-0">
               <td className="p-2.5">
                 {r.label || "—"}
-                <span className="text-ink-muted text-xs"> · {FREQUENCY_LABELS[r.frequency]}</span>
+                <span className="text-ink-muted text-xs"> · {t(FREQUENCY_LABELS[r.frequency])}</span>
               </td>
               <td className="p-2.5 font-mono text-right">{fmtMoney(r.amount)}</td>
               <td className="p-2.5 font-mono text-right">
@@ -377,7 +373,7 @@ function FreqTable({
         </tbody>
         <tfoot>
           <tr className="border-t-[1.5px] border-ink">
-            <td className="p-2.5 label-mono font-semibold" colSpan={2}>Annual Total</td>
+            <td className="p-2.5 label-mono font-semibold" colSpan={2}>{t("Annual Total")}</td>
             <td className="p-2.5 font-mono font-bold text-right">{fmtMoney(annualTotal)}</td>
           </tr>
         </tfoot>

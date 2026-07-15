@@ -3,6 +3,7 @@
 import { TrendingUp } from "lucide-react";
 
 import { fmtMultiple, fmtPercent } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import type { analyzeProject } from "@/lib/calculations";
 import type { Project } from "@/lib/types";
 
@@ -23,6 +24,7 @@ function profitText(analysis: ProjectAnalysis | null, fmtMoney: (n: number | nul
 }
 
 export function GradientHero({ project, analysis, awardedPct, fmtMoney }: GradientHeroProps) {
+  const { t } = useI18n();
   return (
     <section
       className="relative overflow-hidden"
@@ -54,7 +56,7 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
               color: "rgba(255,255,255,0.84)",
             }}
           >
-            PROJECTED 3-YR NET PROFIT
+            {t("PROJECTED 3-YR NET PROFIT")}
           </div>
           <div
             className="mt-2 truncate font-mono"
@@ -70,10 +72,11 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
           </div>
           <div className="mt-3 flex items-center gap-2 text-[13px]" style={{ color: "rgba(255,255,255,0.78)" }}>
             <TrendingUp size={14} style={{ color: "rgba(255,255,255,0.8)" }} />
-            <span>
-              Levered IRR {fmtPercent(analysis?.returns.irr)} on {analysis ? fmtMoney(analysis.returns.cashInvested) : "-"} all-in -{" "}
-              {awardedPct}% committed
-            </span>
+            <span>{t("Levered IRR {irr} on {cash} all-in - {pct}% committed", {
+              irr: fmtPercent(analysis?.returns.irr),
+              cash: analysis ? fmtMoney(analysis.returns.cashInvested) : "-",
+              pct: awardedPct,
+            })}</span>
           </div>
         </div>
 
@@ -97,7 +100,7 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
             >
               <span className="font-mono text-[20px] font-extrabold">{chip.value}</span>
               <span className="text-right text-[10.5px] font-semibold" style={{ color: "rgba(255,255,255,0.78)" }}>
-                {chip.label}
+                {t(chip.label)}
               </span>
             </div>
           ))}

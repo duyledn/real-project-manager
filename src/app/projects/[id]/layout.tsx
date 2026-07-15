@@ -93,8 +93,8 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        title="Switch project"
-        aria-label="Switch project"
+                  title={t("Switch project")}
+                  aria-label={t("Switch project")}
         aria-expanded={open}
         className="text-faint hover:text-accent transition-colors"
       >

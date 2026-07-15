@@ -7,6 +7,7 @@ import { useCurrency } from "@/lib/currency";
 import { makeId } from "@/lib/defaults";
 import { syncJobFromBidders } from "@/lib/jobs";
 import { BIDDER_STATUSES, JOB_STATUSES } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 import type { Bidder, Job, Project, SubcontractorWithJobs } from "@/lib/types";
 
 type ScheduleJobPanelProps = {
@@ -27,6 +28,7 @@ export function ScheduleJobPanel({
   onClose,
 }: ScheduleJobPanelProps) {
   const { fmtMoney } = useCurrency();
+  const { t } = useI18n();
 
   function editField<K extends keyof Job>(key: K, value: Job[K]) {
     onChange((j) => ({ ...j, [key]: value }));
@@ -75,13 +77,13 @@ export function ScheduleJobPanel({
         style={{ borderColor: "var(--border)" }}
       >
         <div className="min-w-0">
-          <div className="label-mono text-[10px] uppercase tracking-widest">Phase detail</div>
+          <div className="label-mono text-[10px] uppercase tracking-widest">{t("Phase detail")}</div>
           <h3 className="font-extrabold text-[15px] leading-tight mt-0.5 truncate max-w-[210px]">
-            {job.category}
+            {t(job.category)}
           </h3>
           <div className="text-[11px] text-ink-muted truncate max-w-[210px]">{project.name}</div>
         </div>
-        <button type="button" onClick={onClose} className="icon-btn" aria-label="Close">
+        <button type="button" onClick={onClose} className="icon-btn" aria-label={t("Close")}>
           <X size={16} />
         </button>
       </div>
@@ -89,7 +91,7 @@ export function ScheduleJobPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <label className="block">
           <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-            Category
+            {t("Category")}
           </span>
           <select
             className="field-input w-full h-10"
@@ -98,7 +100,7 @@ export function ScheduleJobPanel({
           >
             {Array.from(new Set([job.category, ...categories].filter(Boolean))).map((c) => (
               <option key={c} value={c}>
-                {c}
+                {t(c)}
               </option>
             ))}
           </select>
@@ -107,7 +109,7 @@ export function ScheduleJobPanel({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-              Start
+              {t("Start")}
             </span>
             <input
               type="date"
@@ -118,7 +120,7 @@ export function ScheduleJobPanel({
           </label>
           <label className="block">
             <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-              End
+              {t("End")}
             </span>
             <input
               type="date"
@@ -132,7 +134,7 @@ export function ScheduleJobPanel({
 
         <label className="block">
           <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-            Status
+            {t("Status")}
           </span>
           <select
             className="field-input w-full h-10"
@@ -141,7 +143,7 @@ export function ScheduleJobPanel({
           >
             {JOB_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {t(s)}
               </option>
             ))}
           </select>
@@ -149,7 +151,7 @@ export function ScheduleJobPanel({
 
         <label className="block">
           <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-            Estimated cost
+            {t("Estimated cost")}
           </span>
           <MoneyInput
             value={job.estimatedCost}
@@ -161,19 +163,19 @@ export function ScheduleJobPanel({
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="label-mono text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-              Bids ({job.bidders.length})
+              {t("Bids ({n})", { n: job.bidders.length })}
             </span>
             <button
               type="button"
               onClick={addBidder}
               className="text-[11.5px] font-bold text-accent hover:underline"
             >
-              + Add bid
+              {t("+ Add bid")}
             </button>
           </div>
 
           {job.bidders.length === 0 ? (
-            <p className="text-[12px] text-ink-muted">No bids yet.</p>
+            <p className="text-[12px] text-ink-muted">{t("No bids yet.")}</p>
           ) : (
             <div className="space-y-2">
               {job.bidders.map((bidder) => {
@@ -197,7 +199,7 @@ export function ScheduleJobPanel({
                         {initialsOf(sub?.companyName ?? "?")}
                       </div>
                       <span className="pill" style={pillStyle(bidder.status)}>
-                        {bidder.status}
+                        {t(bidder.status)}
                       </span>
                       {bidder.bidPrice > 0 && (
                         <span className="ml-auto font-mono text-[11px] text-ink-muted">
@@ -213,7 +215,7 @@ export function ScheduleJobPanel({
                         editBidder(bidder.id, { subcontractorId: e.target.value || null })
                       }
                     >
-                      <option value="">— Unassigned —</option>
+                      <option value="">{t("— Unassigned —")}</option>
                       {subcontractors.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.companyName}
@@ -231,7 +233,7 @@ export function ScheduleJobPanel({
                       >
                         {BIDDER_STATUSES.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {t(s)}
                           </option>
                         ))}
                       </select>
@@ -244,7 +246,7 @@ export function ScheduleJobPanel({
                         type="button"
                         onClick={() => removeBidder(bidder.id)}
                         className="icon-btn text-ink-muted hover:text-red-500 shrink-0"
-                        aria-label="Remove bid"
+                        aria-label={t("Remove bid")}
                       >
                         <X size={14} />
                       </button>

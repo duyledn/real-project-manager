@@ -71,7 +71,7 @@ export default function WorkspaceSettingsPage() {
     try {
       await saveAvatar(await fileToAvatarDataUrl(file));
     } catch (err) {
-      window.alert((err as Error).message);
+      window.alert(t((err as Error).message));
     } finally {
       setBusy(false);
     }
@@ -149,7 +149,7 @@ export default function WorkspaceSettingsPage() {
           <div className="flex items-center gap-4 flex-wrap">
             {user?.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatar} alt="Avatar" className="w-20 h-20 rounded-full object-cover" style={{ border: "1px solid var(--border)" }} />
+              <img src={user.avatar} alt={t("Avatar")} className="w-20 h-20 rounded-full object-cover" style={{ border: "1px solid var(--border)" }} />
             ) : (
               <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-extrabold text-xl" style={{ background: "linear-gradient(150deg,#7A8C5A,#9DAE6E)" }}>
                 {profileInitials(user?.tag ?? "")}

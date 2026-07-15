@@ -9,6 +9,7 @@ import { makeId } from "@/lib/defaults";
 import { useJobCategories } from "@/lib/useJobCategories";
 import { useProjectContext } from "@/lib/projectContext";
 import { useSubcontractors } from "@/lib/useSubcontractors";
+import { useI18n } from "@/lib/i18n";
 import type { Project } from "@/lib/types";
 
 function todayIso(): string {
@@ -38,13 +39,14 @@ function QuickAddPopover({
   onClose,
   onSave,
 }: QuickAddPopoverProps) {
+  const { t } = useI18n();
   const options = Array.from(new Set([category, ...categories].filter(Boolean)));
 
   return (
     <>
       <button
         type="button"
-        aria-label="Close add phase"
+        aria-label={t("Close add phase")}
         className="fixed inset-0 z-40 cursor-default bg-transparent"
         onClick={onClose}
       />
@@ -60,12 +62,12 @@ function QuickAddPopover({
         <div className="space-y-3">
           <label className="block">
             <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-              Phase
+              {t("Phase")}
             </span>
             <select className="field-input h-11 w-full" value={category} onChange={(event) => onCategoryChange(event.target.value)}>
               {options.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {t(option)}
                 </option>
               ))}
             </select>
@@ -74,7 +76,7 @@ function QuickAddPopover({
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-                Start
+                {t("Start")}
               </span>
               <input
                 className="field-input h-11 w-full"
@@ -85,7 +87,7 @@ function QuickAddPopover({
             </label>
             <label className="block">
               <span className="label-mono mb-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-                End
+                {t("End")}
               </span>
               <input
                 className="field-input h-11 w-full"
@@ -99,10 +101,10 @@ function QuickAddPopover({
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button type="button" className="btn h-10 px-4" onClick={onClose}>
-              Cancel
+              {t("Cancel")}
             </button>
             <button type="button" className="btn btn-blue h-10 px-4" onClick={onSave}>
-              Add phase
+              {t("Add phase")}
             </button>
           </div>
         </div>
@@ -112,6 +114,7 @@ function QuickAddPopover({
 }
 
 export default function SchedulingPage() {
+  const { t } = useI18n();
   const { project, setProject, loading, error } = useProjectContext();
   const { categories } = useJobCategories();
   const { subs } = useSubcontractors();
@@ -123,8 +126,8 @@ export default function SchedulingPage() {
   const [quickEndDate, setQuickEndDate] = useState("");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
-  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading...</div>;
-  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
+  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">{t("Loading...")}</div>;
+  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{t(error)}</div>;
   if (!project) return null;
 
   const defaultStartDate = project.startDate || todayIso();
@@ -243,12 +246,12 @@ export default function SchedulingPage() {
           >
             <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
               <div>
-                <div className="label-mono">Schedule / Timeline</div>
+                <div className="label-mono">{t("Schedule / Timeline")}</div>
                 <h2 className="font-display font-extrabold text-xl leading-none mt-0.5">{project.name}</h2>
               </div>
               <button type="button" className="btn inline-flex items-center gap-1.5" onClick={() => setExpanded(false)}>
                 <Minimize2 size={14} />
-                Close
+                {t("Close")}
               </button>
             </div>
             <div className="flex-1 overflow-auto p-5">

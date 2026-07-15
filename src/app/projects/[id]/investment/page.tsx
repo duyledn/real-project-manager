@@ -8,8 +8,9 @@ import { totalRenovationCost, annualRoomRevenue, analyzeProject } from "@/lib/ca
 import { fmtPercent, fmtMultiple } from "@/lib/format";
 import { KPI_COLORS } from "@/lib/palette";
 import { useCurrency } from "@/lib/currency";
+import { useI18n } from "@/lib/i18n";
 import { NumberField, MoneyInput, MoneyField, currencySymbol, ToggleField, SectionHeader, DragHandle, EditModeProvider } from "@/components/fields";
-import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
+import { useDragReorder, useFlipList, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { copyRowsAsTSV } from "@/lib/clipboard";
@@ -25,6 +26,7 @@ const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as ExpenseFrequency[];
 export default function InvestmentPage() {
   const { project, setProject, loading, error } = useProjectContext();
   const { fmtMoney } = useCurrency();
+  const { t } = useI18n();
 
   const [adjustMode, setAdjustMode] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -32,8 +34,8 @@ export default function InvestmentPage() {
   // Live KPIs straight from the engine — never stored, always re-derived.
   const analysis = useMemo(() => (project ? analyzeProject(project) : null), [project]);
 
-  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
-  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
+  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">{t("Loading…")}</div>;
+  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{t(error)}</div>;
   if (!project) return null;
 
   const renoTotal = totalRenovationCost(project);
@@ -47,7 +49,7 @@ export default function InvestmentPage() {
       {/* Intro + save status (no project-name heading — it lives in the shell header) */}
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display font-extrabold text-2xl leading-none">Investment Estimate</h1>
+          <h1 className="font-display font-extrabold text-2xl leading-none">{t("Investment Estimate")}</h1>
         </div>
       </div>
 
@@ -74,7 +76,7 @@ export default function InvestmentPage() {
                 padding: 18,
               }}
             >
-              <div className="text-xs text-ink-muted font-semibold">{k.label}</div>
+              <div className="text-xs text-ink-muted font-semibold">{t(k.label)}</div>
               <div
                 className="font-mono text-[27px] font-extrabold tracking-tight mt-2"
                 style={{ color: valueColor }}
@@ -89,20 +91,20 @@ export default function InvestmentPage() {
       {/* Assumptions toolbar — Adjust (edit) + Expand all */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <div className="font-display font-bold text-lg">Assumptions</div>
+          <div className="font-display font-bold text-lg">{t("Assumptions")}</div>
           <div className="text-sm text-ink-muted mt-0.5">
             {adjustMode
-              ? "Editing — every change autosaves and recalculates live."
-              : "Read-only display. Toggle Adjust to edit the fields."}
+              ? t("Editing — every change autosaves and recalculates live.")
+              : t("Read-only display. Toggle Adjust to edit the fields.")}
           </div>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setAdjustMode((a) => !a)} className={adjustMode ? "btn btn-blue gap-1.5" : "btn gap-1.5"}>
             {adjustMode ? <Eye size={16} /> : <SlidersHorizontal size={16} />}
-            {adjustMode ? "Done" : "Adjust"}
+            {adjustMode ? t("Done") : t("Adjust")}
           </button>
           <button onClick={() => setExpanded(true)} className="btn gap-1.5">
-            <Maximize2 size={16} /> Expand all
+            <Maximize2 size={16} /> {t("Expand all")}
           </button>
         </div>
       </div>
@@ -110,65 +112,65 @@ export default function InvestmentPage() {
       <EditModeProvider readOnly={!adjustMode}>
       {/* 01 — Acquisition */}
       <section>
-        <SectionHeader num="01" title="Acquisition & Basis" />
+        <SectionHeader num="01" title={t("Acquisition & Basis")} />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
-          <MoneyField label="Purchase Price" min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
-          <MoneyField label="Closing Costs" min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
-          <NumberField label="Land Portion" suffix="%" step={1} min={0} value={project.landPercent} onChange={(v) => patch((p) => ({ ...p, landPercent: v }))} hint="Land can't be depreciated; this carves it out of the basis." />
+          <MoneyField label={t("Purchase Price")} min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
+          <MoneyField label={t("Closing Costs")} min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
+          <NumberField label={t("Land Portion")} suffix="%" step={1} min={0} value={project.landPercent} onChange={(v) => patch((p) => ({ ...p, landPercent: v }))} hint={t("Land can't be depreciated; this carves it out of the basis.")} />
         </div>
       </section>
 
       {/* 02 — Financing */}
       <section>
-        <SectionHeader num="02" title="Financing" />
+        <SectionHeader num="02" title={t("Financing")} />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
-          <MoneyField label="Borrowed Capital" min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
-          <NumberField label="Annual Interest Rate" suffix="%" step={0.1} min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
-          <NumberField label="Construction Period" suffix="mo" step={1} min={0} value={project.constructionMonths} onChange={(v) => patch((p) => ({ ...p, constructionMonths: Math.round(v) }))} hint="Interest-only months before the property is rented." />
-          <ToggleField label="Loan Type After Rehab" value={project.amortize} onChange={(v) => patch((p) => ({ ...p, amortize: v }))} trueLabel="Amortizing P&I" falseLabel="Interest-only" hint="Amortizing pays down principal over the term." />
-          <NumberField label="Amortization Term" suffix="yr" step={1} min={1} value={project.loanTermYears} onChange={(v) => patch((p) => ({ ...p, loanTermYears: Math.round(v) }))} />
+          <MoneyField label={t("Borrowed Capital")} min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
+          <NumberField label={t("Annual Interest Rate")} suffix="%" step={0.1} min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
+          <NumberField label={t("Construction Period")} suffix={t("mo")} step={1} min={0} value={project.constructionMonths} onChange={(v) => patch((p) => ({ ...p, constructionMonths: Math.round(v) }))} hint={t("Interest-only months before the property is rented.")} />
+          <ToggleField label={t("Loan Type After Rehab")} value={project.amortize} onChange={(v) => patch((p) => ({ ...p, amortize: v }))} trueLabel={t("Amortizing P&I")} falseLabel={t("Interest-only")} hint={t("Amortizing pays down principal over the term.")} />
+          <NumberField label={t("Amortization Term")} suffix={t("yr")} step={1} min={1} value={project.loanTermYears} onChange={(v) => patch((p) => ({ ...p, loanTermYears: Math.round(v) }))} />
         </div>
       </section>
 
       {/* 03 — Hold assumptions */}
       <section>
-        <SectionHeader num="03" title="Hold Period & Growth" caption="How long you hold, and the annual growth applied to rent and expenses. Add years anytime — the analysis re-projects automatically." />
+        <SectionHeader num="03" title={t("Hold Period & Growth")} caption={t("How long you hold, and the annual growth applied to rent and expenses. Add years anytime — the analysis re-projects automatically.")} />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
-          <NumberField label="Hold Period" suffix="yr" step={1} min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} hint="3, 5, 10… extend as far as you like." />
-          <NumberField label="Rent Growth" suffix="%/yr" step={0.1} value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
-          <NumberField label="Expense Growth" suffix="%/yr" step={0.1} value={project.expenseGrowthRate} onChange={(v) => patch((p) => ({ ...p, expenseGrowthRate: v }))} />
-          <NumberField label="Vacancy Allowance" suffix="%" step={0.5} min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} />
+          <NumberField label={t("Hold Period")} suffix={t("yr")} step={1} min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} hint={t("3, 5, 10… extend as far as you like.")} />
+          <NumberField label={t("Rent Growth")} suffix={t("%/yr")} step={0.1} value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
+          <NumberField label={t("Expense Growth")} suffix={t("%/yr")} step={0.1} value={project.expenseGrowthRate} onChange={(v) => patch((p) => ({ ...p, expenseGrowthRate: v }))} />
+          <NumberField label={t("Vacancy Allowance")} suffix="%" step={0.5} min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} />
         </div>
       </section>
 
       {/* 04 — Revenue sources */}
       <section>
-        <SectionHeader num="04" title="Revenue Sources" />
+        <SectionHeader num="04" title={t("Revenue Sources")} />
 
         {/* Room revenue (hotel / short-term rental) */}
         <div className="panel p-5 mb-4">
-          <div className="label-mono mb-3">Room Revenue</div>
+          <div className="label-mono mb-3">{t("Room Revenue")}</div>
           <div className="grid sm:grid-cols-3 gap-5">
-            <NumberField label="Number of Rooms" step={1} min={0} value={project.rooms} onChange={(v) => patch((p) => ({ ...p, rooms: Math.round(v) }))} hint="Rentable rooms / keys. Leave 0 if not a per-room model." />
-            <MoneyField label="Average Daily Room Revenue (ADR)" min={0} value={project.adr} onChange={(v) => patch((p) => ({ ...p, adr: v }))} hint="Revenue per available room, per night." />
-            <NumberField label="Vacancy Allowance" suffix="%" step={0.5} min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} hint="Shared with the line items below." />
+            <NumberField label={t("Number of Rooms")} step={1} min={0} value={project.rooms} onChange={(v) => patch((p) => ({ ...p, rooms: Math.round(v) }))} hint={t("Rentable rooms / keys. Leave 0 if not a per-room model.")} />
+            <MoneyField label={t("Average Daily Room Revenue (ADR)")} min={0} value={project.adr} onChange={(v) => patch((p) => ({ ...p, adr: v }))} hint={t("Revenue per available room, per night.")} />
+            <NumberField label={t("Vacancy Allowance")} suffix="%" step={0.5} min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} hint={t("Shared with the line items below.")} />
           </div>
           {(project.rooms > 0 && project.adr > 0) && (
             <div className="mt-4 pt-4 border-t border-hair grid sm:grid-cols-3 gap-3 text-sm">
               <div>
-                <div className="label-mono mb-1">Gross / yr</div>
+                <div className="label-mono mb-1">{t("Gross / yr")}</div>
                 <div className="font-mono font-semibold">{fmtMoney(annualRoomRevenue(project))}</div>
-                <div className="text-[11px] text-ink-muted">{project.rooms} rooms × {fmtMoney(project.adr)} × 365</div>
+                <div className="text-[11px] text-ink-muted">{t("{rooms} rooms × {adr} × 365", { rooms: project.rooms, adr: fmtMoney(project.adr) })}</div>
               </div>
               <div>
-                <div className="label-mono mb-1">Expected room revenue / yr</div>
+                <div className="label-mono mb-1">{t("Expected room revenue / yr")}</div>
                 <div className="font-mono font-bold text-green">{fmtMoney(annualRoomRevenue(project) * (1 - project.vacancyRate / 100))}</div>
-                <div className="text-[11px] text-ink-muted">after {project.vacancyRate}% vacancy</div>
+                <div className="text-[11px] text-ink-muted">{t("after {rate}% vacancy", { rate: project.vacancyRate })}</div>
               </div>
               <div>
-                <div className="label-mono mb-1">Per occupied room-night</div>
+                <div className="label-mono mb-1">{t("Per occupied room-night")}</div>
                 <div className="font-mono font-semibold">{fmtMoney(project.adr)}</div>
-                <div className="text-[11px] text-ink-muted">{Math.round(365 * (1 - project.vacancyRate / 100))} occupied nights/room/yr</div>
+                <div className="text-[11px] text-ink-muted">{t("{n} occupied nights/room/yr", { n: Math.round(365 * (1 - project.vacancyRate / 100)) })}</div>
               </div>
             </div>
           )}
@@ -178,7 +180,7 @@ export default function InvestmentPage() {
           rows={project.incomes}
           pinnedRow={
             project.rooms > 0 && project.adr > 0
-              ? { label: "Room revenue", amount: annualRoomRevenue(project) * (1 - project.vacancyRate / 100) }
+              ? { label: t("Room revenue"), amount: annualRoomRevenue(project) * (1 - project.vacancyRate / 100) }
               : null
           }
           onAdd={() => patch((p) => ({ ...p, incomes: [...p.incomes, { id: makeId(), label: "", amount: 0, frequency: "monthly" as ExpenseFrequency }] }))}
@@ -187,15 +189,15 @@ export default function InvestmentPage() {
           }
           onRemove={(rowId) => patch((p) => ({ ...p, incomes: p.incomes.filter((i) => i.id !== rowId) }))}
           onReorderIds={(ids) => patch((p) => ({ ...p, incomes: ids.map((id) => p.incomes.find((i) => i.id === id)!).filter(Boolean) }))}
-          labelHeader="Source"
-          addLabel="Add revenue source"
+          labelHeader={t("Source")}
+          addLabel={t("Add revenue source")}
           fmtMoney={fmtMoney}
         />
       </section>
 
       {/* 05 — Operating expenses */}
       <section>
-        <SectionHeader num="05" title="Operating Expenses" caption="Costs to run the property. Enter the amount per period using the frequency selector on each row." />
+        <SectionHeader num="05" title={t("Operating Expenses")} caption={t("Costs to run the property. Enter the amount per period using the frequency selector on each row.")} />
         <RecurringTable
           rows={project.expenses}
           onAdd={() => patch((p) => ({ ...p, expenses: [...p.expenses, { id: makeId(), label: "", category: "Other", amount: 0, frequency: "monthly" as ExpenseFrequency }] }))}
@@ -204,22 +206,22 @@ export default function InvestmentPage() {
           }
           onRemove={(rowId) => patch((p) => ({ ...p, expenses: p.expenses.filter((e) => e.id !== rowId) }))}
           onReorderIds={(ids) => patch((p) => ({ ...p, expenses: ids.map((id) => p.expenses.find((e) => e.id === id)!).filter(Boolean) }))}
-          labelHeader="Expense"
-          addLabel="Add expense"
+          labelHeader={t("Expense")}
+          addLabel={t("Add expense")}
           fmtMoney={fmtMoney}
         />
       </section>
 
       {/* 06 — Exit & tax */}
       <section>
-        <SectionHeader num="06" title="Exit & Tax Assumptions" />
+        <SectionHeader num="06" title={t("Exit & Tax Assumptions")} />
         <div className="panel p-5 grid sm:grid-cols-3 gap-5">
-          <NumberField label="Appreciation Rate" suffix="%/yr" step={0.1} value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} hint="Used to project sale price if no override below." />
-          <MoneyField label="Exit Value Override" min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} hint="Set a specific sale price. 0 = use appreciation projection." />
-          <NumberField label="Selling Costs" suffix="%" step={0.5} min={0} value={project.sellingCostPercent} onChange={(v) => patch((p) => ({ ...p, sellingCostPercent: v }))} hint="Commission + closing on the sale." />
-          <NumberField label="Marginal Tax Rate" suffix="%" step={1} min={0} value={project.taxRate} onChange={(v) => patch((p) => ({ ...p, taxRate: v }))} hint="Set 0 to analyze pre-tax." />
-          <NumberField label="Depreciation Life" suffix="yr" step={0.5} min={1} value={project.depreciationLifeYears} onChange={(v) => patch((p) => ({ ...p, depreciationLifeYears: v }))} hint="27.5 for US residential rental." />
-          <NumberField label="Depreciation Recapture Tax" suffix="%" step={1} min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} hint="Tax on depreciation taken, due at sale. ~25% in the US. Set 0 to ignore." />
+          <NumberField label={t("Appreciation Rate")} suffix={t("%/yr")} step={0.1} value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} hint={t("Used to project sale price if no override below.")} />
+          <MoneyField label={t("Exit Value Override")} min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} hint={t("Set a specific sale price. 0 = use appreciation projection.")} />
+          <NumberField label={t("Selling Costs")} suffix="%" step={0.5} min={0} value={project.sellingCostPercent} onChange={(v) => patch((p) => ({ ...p, sellingCostPercent: v }))} hint={t("Commission + closing on the sale.")} />
+          <NumberField label={t("Marginal Tax Rate")} suffix="%" step={1} min={0} value={project.taxRate} onChange={(v) => patch((p) => ({ ...p, taxRate: v }))} hint={t("Set 0 to analyze pre-tax.")} />
+          <NumberField label={t("Depreciation Life")} suffix={t("yr")} step={0.5} min={1} value={project.depreciationLifeYears} onChange={(v) => patch((p) => ({ ...p, depreciationLifeYears: v }))} hint={t("27.5 for US residential rental.")} />
+          <NumberField label={t("Depreciation Recapture Tax")} suffix="%" step={1} min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} hint={t("Tax on depreciation taken, due at sale. ~25% in the US. Set 0 to ignore.")} />
         </div>
       </section>
       </EditModeProvider>
@@ -254,6 +256,7 @@ function ExpandAllSheet({
   fmtMoney: (n: number | null | undefined) => string;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       onClick={onClose}
@@ -277,10 +280,10 @@ function ExpandAllSheet({
       >
         <div className="flex items-center justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: "var(--border)" }}>
           <div>
-            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">Full detail</div>
-            <div className="text-xl font-extrabold tracking-tight mt-0.5">All inputs &amp; assumptions</div>
+            <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">{t("Full detail")}</div>
+            <div className="text-xl font-extrabold tracking-tight mt-0.5">{t("All inputs & assumptions")}</div>
           </div>
-          <button onClick={onClose} className="icon-btn" aria-label="Close">
+          <button onClick={onClose} className="icon-btn" aria-label={t("Close")}>
             <X size={18} />
           </button>
         </div>
@@ -288,50 +291,50 @@ function ExpandAllSheet({
         <div className="flex-1 overflow-auto p-5 sm:p-6">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="panel-2 p-[18px]">
-              <div className="font-display font-bold text-base mb-3">Acquisition &amp; rehab</div>
+              <div className="font-display font-bold text-base mb-3">{t("Acquisition & rehab")}</div>
               <div className="grid grid-cols-1 gap-4">
-                <MoneyField label="Purchase price" min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
-                <MoneyField label="Closing costs" min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
-                <NumberField label="Land portion" suffix="%" min={0} value={project.landPercent} onChange={(v) => patch((p) => ({ ...p, landPercent: v }))} />
+                <MoneyField label={t("Purchase price")} min={0} value={project.purchasePrice} onChange={(v) => patch((p) => ({ ...p, purchasePrice: v }))} />
+                <MoneyField label={t("Closing costs")} min={0} value={project.closingCosts} onChange={(v) => patch((p) => ({ ...p, closingCosts: v }))} />
+                <NumberField label={t("Land portion")} suffix="%" min={0} value={project.landPercent} onChange={(v) => patch((p) => ({ ...p, landPercent: v }))} />
                 <div className="flex items-center justify-between pt-1">
-                  <span className="label-mono">Renovation budget</span>
+                  <span className="label-mono">{t("Renovation budget")}</span>
                   <span className="font-mono font-semibold">{fmtMoney(renoTotal)}</span>
                 </div>
               </div>
             </div>
 
             <div className="panel-2 p-[18px]">
-              <div className="font-display font-bold text-base mb-3">Financing</div>
+              <div className="font-display font-bold text-base mb-3">{t("Financing")}</div>
               <div className="grid grid-cols-1 gap-4">
-                <MoneyField label="Borrowed capital" min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
-                <NumberField label="Annual interest rate" suffix="%" min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
-                <NumberField label="Construction period" suffix="mo" min={0} value={project.constructionMonths} onChange={(v) => patch((p) => ({ ...p, constructionMonths: Math.round(v) }))} />
-                <ToggleField label="Loan type after rehab" value={project.amortize} onChange={(v) => patch((p) => ({ ...p, amortize: v }))} trueLabel="Amortizing P&I" falseLabel="Interest-only" />
-                <NumberField label="Amortization term" suffix="yr" min={1} value={project.loanTermYears} onChange={(v) => patch((p) => ({ ...p, loanTermYears: Math.round(v) }))} />
+                <MoneyField label={t("Borrowed capital")} min={0} value={project.borrowed} onChange={(v) => patch((p) => ({ ...p, borrowed: v }))} />
+                <NumberField label={t("Annual interest rate")} suffix="%" min={0} value={project.interestRate} onChange={(v) => patch((p) => ({ ...p, interestRate: v }))} />
+                <NumberField label={t("Construction period")} suffix={t("mo")} min={0} value={project.constructionMonths} onChange={(v) => patch((p) => ({ ...p, constructionMonths: Math.round(v) }))} />
+                <ToggleField label={t("Loan type after rehab")} value={project.amortize} onChange={(v) => patch((p) => ({ ...p, amortize: v }))} trueLabel={t("Amortizing P&I")} falseLabel={t("Interest-only")} />
+                <NumberField label={t("Amortization term")} suffix={t("yr")} min={1} value={project.loanTermYears} onChange={(v) => patch((p) => ({ ...p, loanTermYears: Math.round(v) }))} />
               </div>
             </div>
 
             <div className="panel-2 p-[18px]">
-              <div className="font-display font-bold text-base mb-3">Operating &amp; hold</div>
+              <div className="font-display font-bold text-base mb-3">{t("Operating & hold")}</div>
               <div className="grid grid-cols-1 gap-4">
-                <NumberField label="Hold period" suffix="yr" min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} />
-                <NumberField label="Rent growth" suffix="%/yr" value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
-                <NumberField label="Expense growth" suffix="%/yr" value={project.expenseGrowthRate} onChange={(v) => patch((p) => ({ ...p, expenseGrowthRate: v }))} />
-                <NumberField label="Vacancy allowance" suffix="%" min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} />
+                <NumberField label={t("Hold period")} suffix={t("yr")} min={1} value={project.holdYears} onChange={(v) => patch((p) => ({ ...p, holdYears: Math.round(v) }))} />
+                <NumberField label={t("Rent growth")} suffix={t("%/yr")} value={project.rentGrowthRate} onChange={(v) => patch((p) => ({ ...p, rentGrowthRate: v }))} />
+                <NumberField label={t("Expense growth")} suffix={t("%/yr")} value={project.expenseGrowthRate} onChange={(v) => patch((p) => ({ ...p, expenseGrowthRate: v }))} />
+                <NumberField label={t("Vacancy allowance")} suffix="%" min={0} value={project.vacancyRate} onChange={(v) => patch((p) => ({ ...p, vacancyRate: v }))} />
               </div>
             </div>
 
             <div className="panel-2 p-[18px]">
-              <div className="font-display font-bold text-base mb-3">Revenue &amp; exit</div>
+              <div className="font-display font-bold text-base mb-3">{t("Revenue & exit")}</div>
               <div className="grid grid-cols-1 gap-4">
-                <NumberField label="Number of rooms" min={0} value={project.rooms} onChange={(v) => patch((p) => ({ ...p, rooms: Math.round(v) }))} />
-                <MoneyField label="Average daily room revenue" min={0} value={project.adr} onChange={(v) => patch((p) => ({ ...p, adr: v }))} />
-                <NumberField label="Appreciation rate" suffix="%/yr" value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} />
-                <MoneyField label="Exit value override" min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} />
-                <NumberField label="Selling costs" suffix="%" min={0} value={project.sellingCostPercent} onChange={(v) => patch((p) => ({ ...p, sellingCostPercent: v }))} />
-                <NumberField label="Marginal tax rate" suffix="%" min={0} value={project.taxRate} onChange={(v) => patch((p) => ({ ...p, taxRate: v }))} />
-                <NumberField label="Depreciation life" suffix="yr" min={1} value={project.depreciationLifeYears} onChange={(v) => patch((p) => ({ ...p, depreciationLifeYears: v }))} />
-                <NumberField label="Depreciation recapture tax" suffix="%" min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} />
+                <NumberField label={t("Number of rooms")} min={0} value={project.rooms} onChange={(v) => patch((p) => ({ ...p, rooms: Math.round(v) }))} />
+                <MoneyField label={t("Average daily room revenue")} min={0} value={project.adr} onChange={(v) => patch((p) => ({ ...p, adr: v }))} />
+                <NumberField label={t("Appreciation rate")} suffix={t("%/yr")} value={project.appreciationRate} onChange={(v) => patch((p) => ({ ...p, appreciationRate: v }))} />
+                <MoneyField label={t("Exit value override")} min={0} value={project.exitValueOverride ?? 0} onChange={(v) => patch((p) => ({ ...p, exitValueOverride: v > 0 ? v : null }))} />
+                <NumberField label={t("Selling costs")} suffix="%" min={0} value={project.sellingCostPercent} onChange={(v) => patch((p) => ({ ...p, sellingCostPercent: v }))} />
+                <NumberField label={t("Marginal tax rate")} suffix="%" min={0} value={project.taxRate} onChange={(v) => patch((p) => ({ ...p, taxRate: v }))} />
+                <NumberField label={t("Depreciation life")} suffix={t("yr")} min={1} value={project.depreciationLifeYears} onChange={(v) => patch((p) => ({ ...p, depreciationLifeYears: v }))} />
+                <NumberField label={t("Depreciation recapture tax")} suffix="%" min={0} value={project.recaptureTaxRate} onChange={(v) => patch((p) => ({ ...p, recaptureTaxRate: v }))} />
               </div>
             </div>
           </div>
@@ -339,13 +342,13 @@ function ExpandAllSheet({
 
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2.5">
-            <span className="text-[12.5px] text-ink-muted font-semibold">Projected net profit</span>
+            <span className="text-[12.5px] text-ink-muted font-semibold">{t("Projected net profit")}</span>
             <span className="font-mono text-xl font-extrabold" style={{ color: netProfit >= 0 ? "var(--pos)" : "var(--neg)" }}>
               {fmtMoney(netProfit)}
             </span>
           </div>
           <button onClick={onClose} className="btn btn-blue gap-1.5">
-            <Check size={16} /> Done
+            <Check size={16} /> {t("Done")}
           </button>
         </div>
       </div>
@@ -387,6 +390,7 @@ function RecurringTable({
   const annualTotal =
     rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0) + (pinnedRow?.amount ?? 0);
   const { currency } = useCurrency();
+  const { t } = useI18n();
 
   // Resizable columns (shared across the income & expense tables).
   const { widths, startResize } = useColumnWidths("recurring", { label: 220, amount: 144, freq: 176, annual: 128 });
@@ -404,6 +408,8 @@ function RecurringTable({
     onReorderIds(newRows.map((r) => r.id));
     return draggedId ? newRows.findIndex((r) => r.id === draggedId) : to;
   });
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(bodyRef, rows.map((row) => row.id), drag.dragIndex);
 
   function toggleRow(id: string) {
     setSelected((s) => {
@@ -420,11 +426,11 @@ function RecurringTable({
   async function copyTable() {
     const sym = currency === "VND" ? "VND" : "USD";
     const money = (n: number) => (currency === "VND" ? Math.round(n) : Math.round(n * 100) / 100);
-    const header = [labelHeader, `Amount (${sym})`, "Frequency", `Annual Total (${sym})`];
+    const header = [labelHeader, t("Amount ({currency})", { currency: sym }), t("Frequency"), t("Annual Total ({currency})", { currency: sym })];
     const body = rows.map((r) => [
       r.label,
       money(r.amount),
-      FREQUENCY_LABELS[r.frequency],
+      t(FREQUENCY_LABELS[r.frequency]),
       money(r.amount * FREQUENCY_FACTORS[r.frequency]),
     ]);
     if (await copyRowsAsTSV([header, ...body])) {
@@ -459,11 +465,11 @@ function RecurringTable({
       <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
         <div className="text-sm text-ink-muted">
           {selected.size > 0
-            ? `${selected.size} selected — drag any selected row to move them together`
-            : "Tick rows to move several at once."}
+            ? t("{n} selected — drag any selected row to move them together", { n: selected.size })
+            : t("Tick rows to move several at once.")}
         </div>
         <button onClick={copyTable} className="btn inline-flex items-center gap-1.5 shrink-0">
-          {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied!" : "Copy for Sheets"}
+          {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? t("Copied!") : t("Copy for Sheets")}
         </button>
       </div>
       <div className="panel overflow-x-auto">
@@ -481,28 +487,28 @@ function RecurringTable({
               <th className="p-2.5">
                 <input
                   type="checkbox"
-                  aria-label="Select all rows"
+                  aria-label={t("Select all rows")}
                   checked={rows.length > 0 && selected.size === rows.length}
                   onChange={toggleAll}
                 />
               </th>
               <ResizableTh label={labelHeader} col="label" startResize={startResize} />
-              <ResizableTh label="Amount" col="amount" startResize={startResize} />
-              <ResizableTh label="Frequency" col="freq" startResize={startResize} />
-              <ResizableTh label="Annual Total" col="annual" startResize={startResize} align="right" />
+              <ResizableTh label={t("Amount")} col="amount" startResize={startResize} />
+              <ResizableTh label={t("Frequency")} col="freq" startResize={startResize} />
+              <ResizableTh label={t("Annual Total")} col="annual" startResize={startResize} align="right" />
               <th />
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={bodyRef}>
             {pinnedRow && (
               <tr className="border-b border-hair bg-paper/70">
                 <td className="p-1.5" />
                 <td className="p-2.5">
                   <span className="font-semibold">{pinnedRow.label}</span>
-                  <span className="label-mono ml-2">auto</span>
+                  <span className="label-mono ml-2">{t("auto")}</span>
                 </td>
                 <td className="p-2.5 font-mono text-right text-ink-muted">{fmtMoney(pinnedRow.amount)}</td>
-                <td className="p-2.5 text-sm text-ink-muted">Annual</td>
+                <td className="p-2.5 text-sm text-ink-muted">{t("Annual")}</td>
                 <td className="p-2.5 font-mono font-semibold text-right text-green">{fmtMoney(pinnedRow.amount)}</td>
                 <td />
               </tr>
@@ -510,17 +516,18 @@ function RecurringTable({
             {rows.map((row, idx) => (
               <tr
                 key={row.id}
+                data-key={row.id}
                 {...drag.rowProps(idx)}
                 className={`group border-b border-hair last:border-0 transition-colors ${drag.dragIndex === idx ? "" : "hover:bg-[var(--accent-soft)]"} ${selected.has(row.id) && drag.dragIndex !== idx ? "bg-paper" : ""}`}
                 style={drag.dragIndex === idx
-                  ? { background: "var(--surface-solid)", outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
+                  ? { background: "var(--surface-solid)", opacity: 0.35, outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
                   : undefined}
               >
-                <td className="p-1.5">
-                  <div className="flex items-center justify-center gap-1.5">
+                <td className="p-2">
+                  <div className="flex items-center justify-center gap-2">
                     <input
                       type="checkbox"
-                      aria-label="Select row"
+                      aria-label={t("Select row")}
                       checked={selected.has(row.id)}
                       onChange={() => toggleRow(row.id)}
                       className={`transition-opacity ${selected.has(row.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
@@ -531,7 +538,7 @@ function RecurringTable({
                 <td className="p-1.5">
                   <input
                     value={row.label}
-                    placeholder="Description"
+                    placeholder={t("Description")}
                     onChange={(e) => onChange(row.id, "label", capitalizeFirst(e.target.value))}
                     onKeyDown={onCellEnter}
                     className="cell-input"
@@ -557,7 +564,7 @@ function RecurringTable({
                     className="cell-input"
                   >
                     {FREQUENCIES.map((f) => (
-                      <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
+                      <option key={f} value={f}>{t(FREQUENCY_LABELS[f])}</option>
                     ))}
                   </select>
                 </td>
@@ -567,14 +574,14 @@ function RecurringTable({
                     : fmtMoney(row.amount * FREQUENCY_FACTORS[row.frequency])}
                 </td>
                 <td className="p-1.5 text-center">
-                  <button onClick={() => onRemove(row.id)} className="icon-btn" aria-label="Remove row"><X size={13} /></button>
+                  <button onClick={() => onRemove(row.id)} className="icon-btn" aria-label={t("Remove row")}><X size={13} /></button>
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="border-t-[1.5px] border-ink">
-              <td className="p-2.5 label-mono font-semibold" colSpan={4}>Annual Total</td>
+              <td className="p-2.5 label-mono font-semibold" colSpan={4}>{t("Annual Total")}</td>
               <td className="p-2.5 font-mono font-bold text-right">{fmtMoney(annualTotal)}</td>
               <td />
             </tr>

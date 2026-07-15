@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
 import { AuthFrame, Field } from "@/components/AuthFrame";
 
 export default function LoginPage() {
   const { refresh } = useSession();
+  const { t } = useI18n();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -38,18 +40,18 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthFrame title="Welcome back" subtitle="Sign in to your workspace">
+    <AuthFrame title={t("Welcome back")} subtitle={t("Sign in to your workspace")}>
       <form onSubmit={submit} className="space-y-3.5">
-        <Field label="Username" value={username} onChange={setUsername} autoFocus />
-        <Field label="Password" value={password} onChange={setPassword} type="password" />
-        {error && <div className="text-[12.5px] text-red font-semibold">{error}</div>}
+        <Field label={t("Username")} value={username} onChange={setUsername} autoFocus />
+        <Field label={t("Password")} value={password} onChange={setPassword} type="password" />
+        {error && <div className="text-[12.5px] text-red font-semibold">{t(error)}</div>}
         <button type="submit" disabled={busy} className="btn btn-blue w-full gap-1.5">
-          <LogIn size={16} /> {busy ? "Signing in…" : "Sign in"}
+          <LogIn size={16} /> {busy ? t("Signing in…") : t("Sign in")}
         </button>
       </form>
       <div className="flex items-center justify-between mt-4 text-[12.5px]">
-        <Link href="/signup" className="font-bold text-accent">Create an account</Link>
-        <Link href="/recover" className="text-ink-muted hover:text-accent">Forgot password?</Link>
+        <Link href="/signup" className="font-bold text-accent">{t("Create an account")}</Link>
+        <Link href="/recover" className="text-ink-muted hover:text-accent">{t("Forgot password?")}</Link>
       </div>
     </AuthFrame>
   );

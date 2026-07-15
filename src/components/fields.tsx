@@ -194,11 +194,12 @@ export function MoneyInput({
 /** A small grip icon that arms drag-reordering for a row. Spread the row's
  *  `handleProps` from useDragReorder onto it. */
 export function DragHandle({ handleProps }: { handleProps: DragHandleProps }) {
+  const { t } = useI18n();
   return (
     <span
       {...handleProps}
-      title="Drag to reorder"
-      aria-label="Drag to reorder"
+      title={t("Drag to reorder")}
+      aria-label={t("Drag to reorder")}
       className="cursor-grab active:cursor-grabbing text-ink-muted hover:text-ink inline-flex items-center justify-center select-none"
     >
       <GripVertical size={14} />

@@ -14,76 +14,7 @@
     "companyName": "",
     "senderName": "",
     "plansLink": "",
-    "jobs": [
-      {
-        "id": "bcb1c1ae-e7fa-4647-a454-857f22f856c6",
-        "category": "Kitchen cabinets & countertops",
-        "startDate": "2026-06-27",
-        "endDate": "2026-07-16",
-        "status": "N/A",
-        "approvedBidderId": null,
-        "color": "#F87171",
-        "estimatedCost": 14000,
-        "sourceItemId": "63ad8b55-5654-48f4-97b1-0d0155313ddb",
-        "bidders": []
-      },
-      {
-        "id": "5cf8bda6-506b-4575-a88f-046a888ddf76",
-        "category": "Flooring – LVP, whole house",
-        "startDate": "2026-06-27",
-        "endDate": "2026-07-24",
-        "status": "N/A",
-        "approvedBidderId": null,
-        "color": "#22C55E",
-        "estimatedCost": 6500,
-        "sourceItemId": "c9ca1c56-2886-4570-9f67-7fbcf3288de4",
-        "bidders": [
-          {
-            "id": "b2ea01e4-7514-4553-a4c4-2ffc89831640",
-            "subcontractorId": null,
-            "bidPrice": 0,
-            "status": "Not sent",
-            "bidLink": ""
-          }
-        ]
-      },
-      {
-        "id": "c5074765-1f8a-4de6-8f98-44022815d6b8",
-        "category": "General contractor labor",
-        "startDate": "2026-06-27",
-        "endDate": "",
-        "status": "N/A",
-        "approvedBidderId": null,
-        "color": "",
-        "estimatedCost": 18000,
-        "sourceItemId": "f7d8874b-86d5-42d0-9e8d-8c7183624be9",
-        "bidders": []
-      },
-      {
-        "id": "21f23f06-cc26-4517-9573-f28ab0122483",
-        "category": "Permits & inspections",
-        "startDate": "2026-06-27",
-        "endDate": "",
-        "status": "N/A",
-        "approvedBidderId": null,
-        "color": "",
-        "estimatedCost": 1500,
-        "sourceItemId": "77947c5e-4fd4-418e-bc90-756c5a33ab1d",
-        "bidders": []
-      },
-      {
-        "id": "82c88e98-1ac9-4f1f-8aac-dcad762d3ddd",
-        "category": "Contingency",
-        "startDate": "2026-06-27",
-        "endDate": "",
-        "status": "N/A",
-        "approvedBidderId": null,
-        "color": "",
-        "estimatedCost": 4000,
-        "sourceItemId": "0d9f685c-b25b-42e3-9290-967c3d40beb7",
-        "bidders": []
-      }
-    ],
+    "jobs": [],
     "purchasePrice": 240000,
     "closingCosts": 7000,
     "landPercent": 20,
@@ -115,21 +46,21 @@
         "groupId": ""
       },
       {
-        "id": "f7d8874b-86d5-42d0-9e8d-8c7183624be9",
-        "description": "General contractor labor",
-        "category": "Labor",
-        "qty": 1,
-        "unitCost": 18000,
-        "color": "#16A34A",
-        "groupId": ""
-      },
-      {
         "id": "63ad8b55-5654-48f4-97b1-0d0155313ddb",
         "description": "Kitchen cabinets & countertops",
         "category": "Materials",
         "qty": 1,
         "unitCost": 14000,
-        "color": "#EA580C",
+        "color": "#991B1B",
+        "groupId": ""
+      },
+      {
+        "id": "67e10d0f-aca4-414a-bebc-a8175d24f8b0",
+        "description": "",
+        "category": "Materials",
+        "qty": 1,
+        "unitCost": 0,
+        "color": "#DC2626",
         "groupId": ""
       },
       {
@@ -142,21 +73,21 @@
         "groupId": ""
       },
       {
+        "id": "f7d8874b-86d5-42d0-9e8d-8c7183624be9",
+        "description": "General contractor labor",
+        "category": "Labor",
+        "qty": 1,
+        "unitCost": 18000,
+        "color": "#16A34A",
+        "groupId": ""
+      },
+      {
         "id": "77947c5e-4fd4-418e-bc90-756c5a33ab1d",
         "description": "Permits & inspections",
         "category": "Permits & Fees",
         "qty": 1,
         "unitCost": 1500,
         "color": "#0D9488",
-        "groupId": ""
-      },
-      {
-        "id": "67e10d0f-aca4-414a-bebc-a8175d24f8b0",
-        "description": "",
-        "category": "Materials",
-        "qty": 1,
-        "unitCost": 0,
-        "color": "",
         "groupId": ""
       }
     ],
@@ -215,7 +146,7 @@
     "files": [],
     "id": "648177ec-1956-45c6-b39e-7af8e99aa839",
     "createdAt": "2026-06-27T04:52:56.020Z",
-    "updatedAt": "2026-07-03T05:57:01.820Z"
+    "updatedAt": "2026-07-15T04:21:14.812Z"
   },
   {
     "name": "Untitled Remodel",

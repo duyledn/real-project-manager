@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
 import { AuthFrame, Field } from "@/components/AuthFrame";
 
 export default function SignupPage() {
   const { refresh } = useSession();
+  const { t } = useI18n();
   const router = useRouter();
   const [tag, setTag] = useState("");
   const [username, setUsername] = useState("");
@@ -40,19 +42,19 @@ export default function SignupPage() {
   }
 
   return (
-    <AuthFrame title="Create your account" subtitle="Pick a @tag — it's your name across the app">
+    <AuthFrame title={t("Create your account")} subtitle={t("Pick a @tag — it's your name across the app")}>
       <form onSubmit={submit} className="space-y-3.5">
-        <Field label="@tag" value={tag} onChange={(v) => setTag(v.replace(/^@+/, ""))} placeholder="yourhandle" autoFocus hint="Letters, numbers, underscore. This is how teammates add you." />
-        <Field label="Username" value={username} onChange={setUsername} placeholder="for signing in" />
-        <Field label="Password" value={password} onChange={setPassword} type="password" />
-        <Field label="Recovery PIN" value={pin} onChange={(v) => setPin(v.replace(/\D/g, "").slice(0, 6))} placeholder="6 digits" hint="Used to reset your password if you forget it." />
-        {error && <div className="text-[12.5px] text-red font-semibold">{error}</div>}
+        <Field label="@tag" value={tag} onChange={(v) => setTag(v.replace(/^@+/, ""))} placeholder={t("yourhandle")} autoFocus hint={t("Letters, numbers, underscore. This is how teammates add you.")} />
+        <Field label={t("Username")} value={username} onChange={setUsername} placeholder={t("for signing in")} />
+        <Field label={t("Password")} value={password} onChange={setPassword} type="password" />
+        <Field label={t("Recovery PIN")} value={pin} onChange={(v) => setPin(v.replace(/\D/g, "").slice(0, 6))} placeholder={t("6 digits")} hint={t("Used to reset your password if you forget it.")} />
+        {error && <div className="text-[12.5px] text-red font-semibold">{t(error)}</div>}
         <button type="submit" disabled={busy} className="btn btn-blue w-full gap-1.5">
-          <UserPlus size={16} /> {busy ? "Creating…" : "Create account"}
+          <UserPlus size={16} /> {busy ? t("Creating…") : t("Create account")}
         </button>
       </form>
       <div className="mt-4 text-[12.5px]">
-        <Link href="/login" className="font-bold text-accent">Already have an account? Sign in</Link>
+        <Link href="/login" className="font-bold text-accent">{t("Already have an account? Sign in")}</Link>
       </div>
     </AuthFrame>
   );

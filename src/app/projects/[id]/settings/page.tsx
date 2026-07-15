@@ -17,6 +17,7 @@ import type { LucideIcon } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { useCurrency, convertProjectCurrency } from "@/lib/currency";
 import { DateField, NumberInput, TextField } from "@/components/fields";
+import { useI18n } from "@/lib/i18n";
 
 const STRATEGY_PRESETS = [
   "Buy-Rehab-Hold Rental",
@@ -56,6 +57,7 @@ function fileToAvatarDataUrl(file: File, max = 256): Promise<string> {
 }
 
 export default function SettingsPage() {
+  const { t, lang } = useI18n();
   const { project, setProject, loading, error } = useProjectContext();
   const { currency, exchangeRate, setExchangeRate, setCurrency } = useCurrency();
   const router = useRouter();
@@ -65,19 +67,19 @@ export default function SettingsPage() {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  if (loading) return <div className="text-ink-muted text-sm">Loading…</div>;
-  if (error) return <div className="panel border-red text-red p-4 text-sm">{error}</div>;
+  if (loading) return <div className="text-ink-muted text-sm">{t("Loading…")}</div>;
+  if (error) return <div className="panel border-red text-red p-4 text-sm">{t(error)}</div>;
   if (!project) return null;
 
   const target = currency === "USD" ? "VND" : "USD";
   function handleConvert() {
     const rate = exchangeRate;
     if (!Number.isFinite(rate) || rate <= 0) {
-      window.alert("Set a valid exchange rate first.");
+      window.alert(t("Set a valid exchange rate first."));
       return;
     }
     const ok = window.confirm(
-      `Convert every amount in this project from ${currency} to ${target} at ${rate.toLocaleString("en-US")} ₫/USD? This rewrites the saved values and cannot be undone automatically.`,
+      t("Convert every amount in this project from {from} to {to} at {rate} ₫/USD? This rewrites the saved values and cannot be undone automatically.", { from: currency, to: target, rate: rate.toLocaleString(lang === "vi" ? "vi-VN" : "en-US") }),
     );
     if (!ok) return;
     setProject((prev) => convertProjectCurrency(prev, target, rate));
@@ -93,14 +95,14 @@ export default function SettingsPage() {
       const dataUrl = await fileToAvatarDataUrl(file);
       setProject((p) => ({ ...p, profileImage: dataUrl }));
     } catch (err) {
-      window.alert((err as Error).message);
+      window.alert(t((err as Error).message));
     } finally {
       setBusy(false);
     }
   }
 
   // Require the user to type "<project name> delete" before the button arms.
-  const deletePhrase = `${project.name} delete`;
+  const deletePhrase = t("{name} delete", { name: project.name });
   const canDelete = confirmText.trim().toLowerCase() === deletePhrase.trim().toLowerCase();
 
   async function deleteProject() {
@@ -109,7 +111,7 @@ export default function SettingsPage() {
     const res = await fetch(`/api/projects/${project!.id}`, { method: "DELETE" });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      window.alert(j.error || "Could not delete project");
+      window.alert(t(j.error || "Could not delete project"));
       setDeleting(false);
       return;
     }
@@ -119,20 +121,18 @@ export default function SettingsPage() {
   return (
     <div className="space-y-7 max-w-3xl">
       <p className="text-sm text-ink-muted">
-        Settings for <span className="font-semibold text-ink">{project.name}</span>. Looking for theme or
-        profile? Those live in <span className="font-semibold text-ink">workspace Settings</span> (top-right
-        gear).
+        {t("Settings for")} <span className="font-semibold text-ink">{project.name}</span>. {t("Looking for theme or profile? Those live in")} <span className="font-semibold text-ink">{t("workspace Settings")}</span> {t("(top-right gear).")}
       </p>
 
       {/* ---- Project details ---- */}
       <SettingsCard
         icon={ClipboardList}
-        title="Project details"
-        caption="Changes save automatically. New jobs default to the anticipated start date."
+        title={t("Project details")}
+        caption={t("Changes save automatically. New jobs default to the anticipated start date.")}
       >
         <div className="grid sm:grid-cols-2 gap-5">
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Project Name</span>
+            <span className="label-mono">{t("Project Name")}</span>
             <input
               value={project.name}
               onFocus={() => {
@@ -146,83 +146,82 @@ export default function SettingsPage() {
                   lastNonEmptyNameRef.current = e.target.value;
                 }
               }}
-              placeholder="Project name"
+              placeholder={t("Project name")}
               className="field-input text-base font-semibold"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Investment Strategy</span>
+            <span className="label-mono">{t("Investment Strategy")}</span>
             <input
               value={project.investmentStrategy}
               onChange={(e) => setProject((p) => ({ ...p, investmentStrategy: e.target.value }))}
               list="strategy-presets"
-              placeholder="e.g. Buy-Rehab-Hold Rental"
+              placeholder={t("e.g. Buy-Rehab-Hold Rental")}
               className="field-input text-base font-semibold"
             />
             <datalist id="strategy-presets">
               {STRATEGY_PRESETS.map((s) => (
-                <option key={s} value={s} />
+                <option key={s} value={s} label={t(s)} />
               ))}
             </datalist>
           </label>
-          <TextField label="Project Address" value={project.projectAddress}
-            onChange={(v) => setProject((p) => ({ ...p, projectAddress: v }))} placeholder="123 Main St, City" />
-          <DateField label="Anticipated Start Date" value={project.startDate}
+          <TextField label={t("Project Address")} value={project.projectAddress}
+            onChange={(v) => setProject((p) => ({ ...p, projectAddress: v }))} placeholder={t("123 Main St, City")} />
+          <DateField label={t("Anticipated Start Date")} value={project.startDate}
             onChange={(v) => setProject((p) => ({ ...p, startDate: v }))} />
-          <TextField label="Project Manager" value={project.projectManager}
-            onChange={(v) => setProject((p) => ({ ...p, projectManager: v }))} placeholder="Name" />
-          <TextField label="Owner" value={project.owner}
-            onChange={(v) => setProject((p) => ({ ...p, owner: v }))} placeholder="Name" />
-          <TextField label="General Contractor" value={project.generalContractor}
-            onChange={(v) => setProject((p) => ({ ...p, generalContractor: v }))} placeholder="Company / name" />
+          <TextField label={t("Project Manager")} value={project.projectManager}
+            onChange={(v) => setProject((p) => ({ ...p, projectManager: v }))} placeholder={t("Name")} />
+          <TextField label={t("Owner")} value={project.owner}
+            onChange={(v) => setProject((p) => ({ ...p, owner: v }))} placeholder={t("Name")} />
+          <TextField label={t("General Contractor")} value={project.generalContractor}
+            onChange={(v) => setProject((p) => ({ ...p, generalContractor: v }))} placeholder={t("Company / name")} />
         </div>
       </SettingsCard>
 
       {/* ---- Currency ---- */}
       <SettingsCard
         icon={ArrowLeftRight}
-        title="Currency"
-        caption="The project stores every figure in one currency. Converting rewrites all saved amounts at the rate below."
+        title={t("Currency")}
+        caption={t("The project stores every figure in one currency. Converting rewrites all saved amounts at the rate below.")}
       >
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <div className="label-mono mb-1.5">Active currency</div>
+            <div className="label-mono mb-1.5">{t("Active currency")}</div>
             <div className="font-mono text-2xl font-extrabold">{currency}</div>
           </div>
           <div className="flex-1 min-w-[180px]">
-            <div className="label-mono mb-1.5">Exchange rate (1 USD = ₫)</div>
+            <div className="label-mono mb-1.5">{t("Exchange rate (1 USD = ₫)")}</div>
             <div className="field-input flex items-center gap-2">
               <NumberInput
                 value={exchangeRate}
                 min={1}
                 onChange={(v) => setExchangeRate(v || 25500)}
-                ariaLabel="VND per USD exchange rate"
+                ariaLabel={t("VND per USD exchange rate")}
                 className="w-full bg-transparent font-mono text-base text-ink outline-none"
               />
               <span className="text-ink-muted font-mono text-sm">₫</span>
             </div>
           </div>
           <button onClick={handleConvert} className="btn btn-blue gap-1.5">
-            <ArrowLeftRight size={15} /> Convert to {target}
+            <ArrowLeftRight size={15} /> {t("Convert to {currency}", { currency: target })}
           </button>
         </div>
         <p className="text-[11.5px] text-ink-muted mt-3">
-          Tip: the header badge always shows the active currency. Conversion rounds each amount and flips the
-          project — there is no live FX on individual fields.
+          {t("Tip: the header badge always shows the active currency. Conversion rounds each amount and flips the project — there is no live FX on individual fields.")}
         </p>
       </SettingsCard>
 
       {/* ---- Project image ---- */}
       <SettingsCard
         icon={ImageIcon}
-        title="Project image"
+        title={t("Project image")}
       >
         <div className="flex items-center gap-4 flex-wrap">
           {project.profileImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={project.profileImage}
-              alt="Project"
+              alt={t("Project")}
               className="w-20 h-20 rounded-[18px] object-cover"
               style={{ border: "1px solid var(--border)" }}
             />
@@ -237,11 +236,11 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2">
             <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} className="hidden" />
             <button onClick={() => fileRef.current?.click()} disabled={busy} className="btn gap-1.5">
-              <Upload size={15} /> {busy ? "Processing…" : project.profileImage ? "Replace" : "Upload"}
+              <Upload size={15} /> {t(busy ? "Processing…" : project.profileImage ? "Replace" : "Upload")}
             </button>
             {project.profileImage && (
               <button onClick={() => setProject((p) => ({ ...p, profileImage: "" }))} className="btn btn-ghost gap-1.5">
-                <Trash2 size={14} /> Remove
+                <Trash2 size={14} /> {t("Remove")}
               </button>
             )}
           </div>
@@ -251,8 +250,8 @@ export default function SettingsPage() {
       {/* ---- Recommended (roadmap) ---- */}
       <SettingsCard
         icon={Bell}
-        title="Recommended next"
-        caption="Settings worth adding as the tool grows — not wired up yet."
+        title={t("Recommended next")}
+        caption={t("Settings worth adding as the tool grows — not wired up yet.")}
       >
         <div className="grid sm:grid-cols-2 gap-2.5">
           {[
@@ -266,8 +265,8 @@ export default function SettingsPage() {
               <div key={f.label} className="panel-2 p-3.5 flex gap-3">
                 <Icon size={18} className="text-accent shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[13px] font-bold">{f.label}</div>
-                  <div className="text-[11.5px] text-ink-muted leading-tight mt-0.5">{f.text}</div>
+                  <div className="text-[13px] font-bold">{t(f.label)}</div>
+                  <div className="text-[11.5px] text-ink-muted leading-tight mt-0.5">{t(f.text)}</div>
                 </div>
               </div>
             );
@@ -277,22 +276,21 @@ export default function SettingsPage() {
 
       {/* ---- Danger zone ---- */}
       <div className="rounded-[20px] p-5" style={{ border: "1px solid var(--neg)", background: "var(--accent-soft)" }}>
-        <div className="font-extrabold text-[14.5px] text-red mb-1">Danger zone</div>
+        <div className="font-extrabold text-[14.5px] text-red mb-1">{t("Danger zone")}</div>
         <p className="text-[12.5px] text-ink-muted max-w-lg mb-3">
-          Permanently delete this project and all of its jobs, bids, and financials. Subcontractor records are
-          shared and stay in the database. This cannot be undone.
+          {t("Permanently delete this project and all of its jobs, bids, and financials. Subcontractor records are shared and stay in the database. This cannot be undone.")}
         </p>
         <div className="text-[12.5px] mb-1.5">
-          To confirm, type{" "}
+          {t("To confirm, type")} {" "}
           <span className="font-mono font-bold text-red select-all">{deletePhrase}</span>{" "}
-          below.
+          {t("below.")}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <input
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
             placeholder={deletePhrase}
-            aria-label="Type the project name followed by delete"
+            aria-label={t("Type the project name followed by delete")}
             className="field-input flex-1 min-w-[220px] max-w-sm"
             style={{ borderColor: confirmText && !canDelete ? "var(--neg)" : undefined }}
           />
@@ -302,7 +300,7 @@ export default function SettingsPage() {
             className="btn gap-1.5 shrink-0"
             style={canDelete ? { background: "var(--neg)", color: "#fff", border: "none" } : undefined}
           >
-            <Trash2 size={14} /> {deleting ? "Deleting…" : "Delete project"}
+            <Trash2 size={14} /> {t(deleting ? "Deleting…" : "Delete project")}
           </button>
         </div>
       </div>

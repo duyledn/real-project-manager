@@ -86,6 +86,16 @@
 
 -->
 
+
+## 2026-07-14 — Full Vietnamese Sweep, Floaty Drag, Checkbox Redesign: audit PASSED
+- Scope (3 workstreams): (1) full i18n sweep — all 17 pages + 12 components now use `useI18n().t()`, 750 new call sites, 643 new Vietnamese entries, 761 total dictionary keys; (2) `useDragReorder.ts` extended with custom floaty ghost (transparent native image suppression, deep-clone into `.drag-ghost` wrapper, document-level dragover + rAF movement, cleanup on unmount, reduced-motion bypass) and exported `useFlipList` FLIP hook (position capture on dragover, inverted-delta `useLayoutEffect`, 180ms cubic-bezier, skips dragged row); (3) checkbox global restyle (19px, border-radius 7px, appearance:none, clip-path checkmark).
+- Audit findings: all spec requirements met. Ghost CSS (`.drag-ghost`), checkbox CSS, glass opacity tokens, all verified via Read tool against spec — exact matches. All 4 FLIP call sites wired correctly (`data-key`, container ref, `opacity:0.35` + outline). Enum values not translated (stored values preserved, translated at render site via `t(s)` pattern). 3 justified untranslated strings (email format example, 2 Drive URLs).
+- Acceptable deviation: `useFlipList` API takes `(containerRef, keys: readonly string[], dragIndex)` instead of the spec's `keySelector` function — functionally equivalent, covers all 4 call sites correctly.
+- Out-of-checklist edits: `layout.tsx` and `TopNav.tsx` updated for untranslated accessibility text found by the required global heuristic — justified.
+- TypeScript: Coding LLM's `tsc --noEmit` exit 0 (authoritative). Sandbox tsc run invalid due to OneDrive sync lag (known recurring issue — bash sandbox shows stale 109-line stubs instead of the 291-line actual files; same pattern as prior audits).
+- Blocked: browser visual verification (Vietnamese display, drag feel, checkbox rendering) blocked by `TypeError: Cannot redefine property: process` in bundled browser client — environment limitation, not a code defect. Manual QA still needed before deploy.
+- Files modified by Coding LLM: `src/lib/useDragReorder.ts`, `src/lib/translations.ts`, `src/app/globals.css`, `src/app/projects/[id]/layout.tsx`, `src/components/TopNav.tsx`, all 17 pages in checklist 1b, all 12 components in checklist 1b.
+
 ## 2026-07-14 — Project Settings Consolidation & Shell Polish: audit passed (code), visual QA pending
 - Scope (6 user requests): project-detail editing moved from Jobs & Bids §01 +
   Dashboard modal into a new autosaving "Project details" card at the top of

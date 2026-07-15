@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
+import { useI18n } from "@/lib/i18n";
 import type { Project, ProjectFile } from "@/lib/types";
 
 /** Per-file size cap. Files persist as data URLs inside the project JSON, so
@@ -58,6 +59,7 @@ function fileIconFor(f: ProjectFile) {
 }
 
 export default function FilesPage() {
+  const { t } = useI18n();
   const { project, setProject, loading, error } = useProjectContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,8 +73,8 @@ export default function FilesPage() {
 
   const allFiles: ProjectFile[] = useMemo(() => project?.files ?? [], [project]);
 
-  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">Loading…</div>;
-  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{error}</div>;
+  if (loading) return <div className="font-mono text-ink-muted text-sm uppercase">{t("Loading…")}</div>;
+  if (error) return <div className="panel border-red text-red p-4 font-mono text-sm">{t(error)}</div>;
   if (!project) return null;
 
   function setFiles(updater: (files: ProjectFile[]) => ProjectFile[]) {
@@ -130,7 +132,7 @@ export default function FilesPage() {
       const tooBig = picked.filter((f) => f.size > MAX_FILE_BYTES);
       const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES);
       if (tooBig.length > 0) {
-        window.alert(`Skipped ${tooBig.length} file(s) over ${formatBytes(MAX_FILE_BYTES)}: ${tooBig.map((f) => f.name).join(", ")}`);
+        window.alert(t("Skipped {count} file(s) over {size}: {names}", { count: tooBig.length, size: formatBytes(MAX_FILE_BYTES), names: tooBig.map((f) => f.name).join(", ") }));
       }
       const nodes: ProjectFile[] = [];
       for (const f of ok) {
@@ -147,7 +149,7 @@ export default function FilesPage() {
       }
       if (nodes.length) setFiles((fs) => [...fs, ...nodes]);
     } catch (err) {
-      window.alert((err as Error).message);
+      window.alert(t((err as Error).message));
     } finally {
       setBusy(false);
     }
@@ -171,8 +173,8 @@ export default function FilesPage() {
     setMenuId(null);
     const isFolder = f.kind === "folder";
     const msg = isFolder
-      ? `Delete the folder “${f.name}” and everything inside it? This can't be undone.`
-      : `Delete “${f.name}”? This can't be undone.`;
+      ? t("Delete the folder “{name}” and everything inside it? This can't be undone.", { name: f.name })
+      : t("Delete “{name}”? This can't be undone.", { name: f.name });
     if (!window.confirm(msg)) return;
     const doomed = isFolder ? descendantIds(f.id) : new Set([f.id]);
     setFiles((fs) => fs.filter((x) => !doomed.has(x.id)));
@@ -222,8 +224,8 @@ export default function FilesPage() {
       {/* Intro + save */}
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display font-extrabold text-2xl leading-none">Files</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">Drag items onto a folder to move them.</p>
+          <h1 className="font-display font-extrabold text-2xl leading-none">{t("Files")}</h1>
+          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">{t("Drag items onto a folder to move them.")}</p>
         </div>
       </div>
 
@@ -254,11 +256,11 @@ export default function FilesPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={createFolder} className="btn inline-flex items-center gap-1.5">
-            <FolderPlus size={15} /> New folder
+            <FolderPlus size={15} /> {t("New folder")}
           </button>
           <input ref={fileInputRef} type="file" multiple onChange={onUpload} className="hidden" />
           <button onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn btn-blue inline-flex items-center gap-1.5">
-            <Upload size={15} /> {busy ? "Uploading…" : "Upload"}
+            <Upload size={15} /> {t(busy ? "Uploading…" : "Upload")}
           </button>
         </div>
       </div>
@@ -268,8 +270,7 @@ export default function FilesPage() {
         <div className="panel p-12 text-center">
           <Folder size={40} className="mx-auto text-faint mb-3" />
           <p className="text-sm text-ink-muted">
-            This folder is empty. Use <span className="font-bold">Upload</span> to add files or{" "}
-            <span className="font-bold">New folder</span> to organize them.
+            {t("This folder is empty. Use")} <span className="font-bold">{t("Upload")}</span> {t("to add files or")} <span className="font-bold">{t("New folder")}</span> {t("to organize them.")}
           </p>
         </div>
       ) : (
@@ -305,7 +306,7 @@ export default function FilesPage() {
                     ) : (
                       <>
                         <div className="text-[13px] font-bold truncate" title={f.name}>{f.name}</div>
-                        <div className="text-[11.5px] text-ink-muted">Folder - double-click to open</div>
+                        <div className="text-[11.5px] text-ink-muted">{t("Folder - double-click to open")}</div>
                       </>
                     )}
                   </div>
@@ -346,7 +347,7 @@ export default function FilesPage() {
                     ) : (
                       <>
                         <div className="text-[13px] font-bold truncate" title={f.name}>{f.name}</div>
-                        <div className="text-[11.5px] text-ink-muted truncate">File - ready to download</div>
+                        <div className="text-[11.5px] text-ink-muted truncate">{t("File - ready to download")}</div>
                       </>
                     )}
                   </div>
@@ -355,7 +356,7 @@ export default function FilesPage() {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); download(f); }}
                     className="icon-btn !w-8 !h-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                    aria-label={`Download ${f.name}`}
+                    aria-label={t("Download {name}", { name: f.name })}
                   >
                     <Download size={14} />
                   </button>
@@ -375,7 +376,7 @@ export default function FilesPage() {
 
       {/* Footer summary */}
       <div className="text-[11px] text-ink-muted font-mono">
-        {allFiles.filter((f) => f.kind === "file").length} file(s) · {allFiles.filter((f) => f.kind === "folder").length} folder(s) · {formatBytes(totalSize)} total
+        {t("{files} file(s) · {folders} folder(s) · {size} total", { files: allFiles.filter((f) => f.kind === "file").length, folders: allFiles.filter((f) => f.kind === "folder").length, size: formatBytes(totalSize) })}
       </div>
     </div>
   );
@@ -393,6 +394,8 @@ function RenameInput({
   onCommit: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
       <input
@@ -406,7 +409,7 @@ function RenameInput({
         onBlur={onCommit}
         className="cell-input !py-1 text-[13px] font-semibold"
       />
-      <button onMouseDown={(e) => { e.preventDefault(); onCommit(); }} className="icon-btn !w-7 !h-7 shrink-0" aria-label="Save name">
+      <button onMouseDown={(e) => { e.preventDefault(); onCommit(); }} className="icon-btn !w-7 !h-7 shrink-0" aria-label={t("Save name")}>
         <Check size={13} />
       </button>
     </div>
@@ -427,9 +430,11 @@ function ItemMenu({
   onDelete: () => void;
   onDownload?: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="relative shrink-0">
-      <button onClick={onToggle} className="icon-btn !w-7 !h-7 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="More actions">
+      <button onClick={onToggle} className="icon-btn !w-7 !h-7 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={t("More actions")}>
         <MoreVertical size={14} />
       </button>
       {open && (
@@ -448,14 +453,14 @@ function ItemMenu({
         >
           {onDownload && (
             <button onClick={onDownload} className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-[12.5px] font-semibold transition-colors hover:bg-[var(--accent-soft)]">
-              <Download size={14} /> Download
+              <Download size={14} /> {t("Download")}
             </button>
           )}
           <button onClick={onRename} className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-[12.5px] font-semibold transition-colors hover:bg-[var(--accent-soft)]">
-            <Pencil size={14} /> Rename
+            <Pencil size={14} /> {t("Rename")}
           </button>
           <button onClick={onDelete} className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-[12.5px] font-semibold text-red transition-colors hover:bg-[var(--accent-soft)]">
-            <Trash2 size={14} /> Delete
+            <Trash2 size={14} /> {t("Delete")}
           </button>
         </div>
       )}

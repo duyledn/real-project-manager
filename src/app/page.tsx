@@ -19,6 +19,7 @@ import type { ProjectSummary, PublicUser } from "@/lib/types";
 import { defaultProjectInput } from "@/lib/defaults";
 import { formatMoney } from "@/lib/currency";
 import { useSession } from "@/lib/session-context";
+import { useI18n } from "@/lib/i18n";
 import { prefetchProject } from "@/lib/useProject";
 
 interface CompanyView {
@@ -33,6 +34,7 @@ interface CompanyView {
 
 export default function HomePage() {
   const { user } = useSession();
+  const { t } = useI18n();
   const [companies, setCompanies] = useState<CompanyView[]>([]);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,43 +86,43 @@ export default function HomePage() {
       <header className="panel mb-6 p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent mb-2">
-            {user ? `Signed in as @${user.tag}` : "Workspace"}
+            {user ? t("Signed in as @{tag}", { tag: user.tag }) : t("Workspace")}
           </div>
-          <h1 className="font-display font-extrabold text-4xl leading-none">Your workspaces</h1>
+          <h1 className="font-display font-extrabold text-4xl leading-none">{t("Your workspaces")}</h1>
           <p className="text-ink-muted text-sm mt-2 max-w-md">
-            Projects live inside companies. Own a company to add teammates by @tag and assign them to projects.
+            {t("Projects live inside companies. Own a company to add teammates by @tag and assign them to projects.")}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/subcontractors" className="btn flex items-center gap-2">
-            <Users size={15} /> Subcontractors
+            <Users size={15} /> {t("Subcontractors")}
           </Link>
         </div>
       </header>
 
-      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{error}</div>}
+      {error && <div className="panel border-red text-red p-4 mb-6 text-sm">{t(error)}</div>}
 
       {/* Create company */}
       <div className="panel-2 p-4 mb-6 flex items-center gap-2.5 flex-wrap">
         <Building2 size={18} className="text-accent" />
-        <span className="text-[13px] font-bold">New company</span>
+        <span className="text-[13px] font-bold">{t("New company")}</span>
         <input
           value={newCompany}
           onChange={(e) => setNewCompany(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && createCompany()}
-          placeholder="Company name…"
+          placeholder={t("Company name…")}
           className="field-input flex-1 min-w-[180px] max-w-xs !min-h-0 py-2"
         />
         <button onClick={createCompany} disabled={creatingCompany || !newCompany.trim()} className="btn btn-blue gap-1.5">
-          <Plus size={15} /> {creatingCompany ? "Creating…" : "Create"}
+          <Plus size={15} /> {creatingCompany ? t("Creating…") : t("Create")}
         </button>
       </div>
 
       {loading ? (
-        <div className="text-ink-muted text-sm">Loading…</div>
+        <div className="text-ink-muted text-sm">{t("Loading…")}</div>
       ) : companies.length === 0 ? (
         <div className="panel p-10 text-center text-ink-muted">
-          No companies yet. Create one above to start adding projects and teammates.
+          {t("No companies yet. Create one above to start adding projects and teammates.")}
         </div>
       ) : (
         <div className="space-y-5">
@@ -154,6 +156,7 @@ function CompanyCard({
   onError: (m: string) => void;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [addTag, setAddTag] = useState("");
   const [adding, setAdding] = useState(false);
@@ -218,13 +221,15 @@ function CompanyCard({
               <Crown size={12} className="text-amber" />
               {company.owner ? `@${company.owner.tag}` : "—"}
               <span className="text-faint">·</span>
-              {company.members.length + 1} {company.members.length === 0 ? "person" : "people"}
+              {company.members.length === 0
+                ? t("{n} person", { n: company.members.length + 1 })
+                : t("{n} people", { n: company.members.length + 1 })}
             </div>
           </div>
         </div>
         {company.canManage && (
           <button onClick={createProject} disabled={creating} className="btn btn-blue gap-1.5 shrink-0">
-            <Plus size={15} /> {creating ? "Creating…" : "New project"}
+            <Plus size={15} /> {creating ? t("Creating…") : t("New project")}
           </button>
         )}
       </div>
@@ -233,19 +238,19 @@ function CompanyCard({
       <div className="panel-2 p-3.5 mb-4">
         <div className="flex items-center gap-2 mb-2.5">
           <UsersRound size={15} className="text-ink-muted" />
-          <span className="label-mono">Team</span>
+          <span className="label-mono">{t("Team")}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {company.owner && (
             <span className="pill" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-              <Crown size={12} /> @{company.owner.tag} · Owner
+              <Crown size={12} /> @{company.owner.tag} · {t("Owner")}
             </span>
           )}
           {company.members.map((m) => (
             <span key={m.id} className="pill" style={{ background: "var(--glass-2)", color: "var(--text)", border: "1px solid var(--border)" }}>
               @{m.tag}
               {company.canManage && (
-                <button onClick={() => removeMember(m.id)} className="text-faint hover:text-red ml-0.5" aria-label={`Remove @${m.tag}`}>
+                <button onClick={() => removeMember(m.id)} className="text-faint hover:text-red ml-0.5" aria-label={t("Remove @{tag}", { tag: m.tag })}>
                   <X size={12} />
                 </button>
               )}
@@ -258,10 +263,10 @@ function CompanyCard({
                 value={addTag}
                 onChange={(e) => setAddTag(e.target.value.replace(/^@+/, ""))}
                 onKeyDown={(e) => e.key === "Enter" && addMember()}
-                placeholder="tag"
+                placeholder={t("tag")}
                 className="bg-transparent outline-none text-[12px] w-20"
               />
-              <button onClick={addMember} disabled={adding || !addTag.trim()} className="icon-btn !w-6 !h-6" aria-label="Add member">
+              <button onClick={addMember} disabled={adding || !addTag.trim()} className="icon-btn !w-6 !h-6" aria-label={t("Add member")}>
                 <UserPlus size={12} />
               </button>
             </span>
@@ -272,7 +277,9 @@ function CompanyCard({
       {/* Projects */}
       {projects.length === 0 ? (
         <p className="text-sm text-ink-muted px-1">
-          No projects yet.{company.canManage ? " Create one with “New project”." : " You'll see assigned projects here."}
+          {t("No projects yet.")}
+          {" "}
+          {company.canManage ? t("Create one with “New project”.") : t("You'll see assigned projects here.")}
         </p>
       ) : (
         <div className="grid gap-2.5">
@@ -297,6 +304,7 @@ function ProjectRow({
   onChanged: () => Promise<void>;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [assignOpen, setAssignOpen] = useState(false);
   const positive = project.netProfit >= 0;
 
@@ -319,17 +327,20 @@ function ProjectRow({
       <button onClick={() => router.push(`/projects/${project.id}`)} className="flex-1 min-w-0 text-left">
         <div className="font-display font-bold text-lg truncate">{project.name}</div>
         <div className="label-mono mt-1">
-          {project.holdYears}-yr hold · Rehab {formatMoney(project.totalRenovationCost, project.currency)} · Updated{" "}
-          {new Date(project.updatedAt).toLocaleDateString()}
+          {t("{years}-yr hold · Rehab {cost} · Updated {date}", {
+            years: project.holdYears,
+            cost: formatMoney(project.totalRenovationCost, project.currency),
+            date: new Date(project.updatedAt).toLocaleDateString(),
+          })}
         </div>
       </button>
 
       <div className="flex items-center gap-3 shrink-0">
-        <span className="pill" style={{ background: "var(--glass-2)", color: "var(--ink-muted)", border: "1px solid var(--border)" }} title={`${project.memberCount} with access`}>
+        <span className="pill" style={{ background: "var(--glass-2)", color: "var(--ink-muted)", border: "1px solid var(--border)" }} title={t("{n} with access", { n: project.memberCount })}>
           <Users size={12} /> {project.memberCount}
         </span>
         <div className="text-right">
-          <div className="label-mono">Net profit</div>
+          <div className="label-mono">{t("Net profit")}</div>
           <div className={`font-mono font-bold flex items-center gap-1 justify-end ${positive ? "text-green" : "text-red"}`}>
             {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
             {formatMoney(project.netProfit, project.currency)}
@@ -338,7 +349,7 @@ function ProjectRow({
 
         {canManage && (
           <div className="relative">
-            <button onClick={() => setAssignOpen((o) => !o)} className="icon-btn" title="Assign people" aria-label="Assign people">
+            <button onClick={() => setAssignOpen((o) => !o)} className="icon-btn" title={t("Assign people")} aria-label={t("Assign people")}>
               <UserPlus size={14} />
             </button>
             {assignOpen && (
@@ -348,9 +359,9 @@ function ProjectRow({
                   className="absolute right-0 mt-2 w-[230px] p-2 z-[140]"
                   style={{ borderRadius: 16, background: "var(--glass-strong)", backdropFilter: "var(--blur)", WebkitBackdropFilter: "var(--blur)", border: "1px solid var(--border)", borderTopColor: "var(--border-top)", boxShadow: "var(--shadow-lg)" }}
                 >
-                  <div className="label-mono px-2 py-1.5">Assign teammates</div>
+                  <div className="label-mono px-2 py-1.5">{t("Assign teammates")}</div>
                   {company.members.length === 0 ? (
-                    <div className="px-2.5 py-2 text-[12px] text-ink-muted">Add teammates to the company first.</div>
+                    <div className="px-2.5 py-2 text-[12px] text-ink-muted">{t("Add teammates to the company first.")}</div>
                   ) : (
                     company.members.map((m) => {
                       const assigned = project.memberIds.includes(m.id);

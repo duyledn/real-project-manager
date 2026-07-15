@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent }
 import { Plus, X } from "lucide-react";
 import type { RenovationItem } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
-import { useDragReorder, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
+import { useI18n } from "@/lib/i18n";
+import { useDragReorder, useFlipList, moveItem, moveItemsBefore } from "@/lib/useDragReorder";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { DragHandle, MoneyInput, NumberInput, currencySymbol } from "@/components/fields";
@@ -50,6 +51,7 @@ export function ItemsTable({
   addLabel?: string;
 }) {
   const { currency } = useCurrency();
+  const { t } = useI18n();
   const subtotal = items.reduce((s, i) => s + i.qty * i.unitCost, 0);
 
   const { widths, startResize } = useColumnWidths("items", COL_DEFAULTS);
@@ -65,6 +67,8 @@ export function ItemsTable({
     // Tell the hook where the dragged item landed so live reordering tracks it.
     return draggedId ? newItems.findIndex((i) => i.id === draggedId) : to;
   });
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(bodyRef, items.map((item) => item.id), drag.dragIndex);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const [pendingCol, setPendingCol] = useState<number | null>(null);
@@ -105,23 +109,23 @@ export function ItemsTable({
               <th className="p-2.5">
                 <input
                   type="checkbox"
-                  aria-label="Select all"
+                  aria-label={t("Select all")}
                   checked={allSelected}
                   onChange={() => onToggleSelectAll(items.map((i) => i.id))}
                 />
               </th>
-              <ResizableTh label="Item" col="item" startResize={startResize} />
-              <ResizableTh label="Category" col="cat" startResize={startResize} />
-              <ResizableTh label="Qty" col="qty" startResize={startResize} />
-              <ResizableTh label="Unit Cost" col="cost" startResize={startResize} />
-              <ResizableTh label="Total" col="total" startResize={startResize} align="right" />
+              <ResizableTh label={t("Item")} col="item" startResize={startResize} />
+              <ResizableTh label={t("Category")} col="cat" startResize={startResize} />
+              <ResizableTh label={t("Qty")} col="qty" startResize={startResize} />
+              <ResizableTh label={t("Unit Cost")} col="cost" startResize={startResize} />
+              <ResizableTh label={t("Total")} col="total" startResize={startResize} align="right" />
               <th />
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={bodyRef}>
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-4 text-center text-ink-muted text-sm">No items yet.</td>
+                <td colSpan={7} className="p-4 text-center text-ink-muted text-sm">{t("No items yet.")}</td>
               </tr>
             ) : (
               items.map((item, idx) => {
@@ -130,33 +134,34 @@ export function ItemsTable({
                 return (
                   <tr
                     key={item.id}
+                    data-key={item.id}
                     {...drag.rowProps(idx)}
                     className={`group border-b border-hair last:border-0 transition-colors ${isDragging ? "" : "hover:bg-[var(--accent-soft)]"} ${isSel && !isDragging ? "bg-paper" : ""}`}
                     style={
                       isDragging
-                        ? { background: "var(--surface-solid)", outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
+                        ? { background: "var(--surface-solid)", opacity: 0.35, outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
                         : !isSel && item.color
                           ? { backgroundColor: tint(item.color) }
                           : undefined
                     }
                   >
-                    <td className="p-1.5">
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td className="p-2">
+                      <div className="flex items-center justify-center gap-2">
                         <input
                           type="checkbox"
-                          aria-label="Select item"
+                          aria-label={t("Select item")}
                           checked={isSel}
                           onChange={() => onToggleSelect(item.id)}
                           className={`transition-opacity ${isSel ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
                         />
-                        <ColorPicker value={item.color} onChange={(c) => onUpdate(item.id, { color: c })} title="Item color" />
+                        <ColorPicker value={item.color} onChange={(c) => onUpdate(item.id, { color: c })} title={t("Item color")} />
                         <DragHandle handleProps={drag.handleProps(idx)} />
                       </div>
                     </td>
                     <td className="p-1.5">
                       <input
                         value={item.description}
-                        placeholder="e.g. Bathroom tile"
+                        placeholder={t("e.g. Bathroom tile")}
                         onChange={(e) => onUpdate(item.id, { description: capitalizeFirst(e.target.value) })}
                         onKeyDown={onCellEnter}
                         className="cell-input"
@@ -170,7 +175,7 @@ export function ItemsTable({
                         className="cell-input"
                       >
                         {categories.map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                          <option key={c} value={c}>{t(c)}</option>
                         ))}
                       </select>
                     </td>
@@ -197,7 +202,7 @@ export function ItemsTable({
                     </td>
                     <td className="p-2.5 font-mono font-semibold text-right truncate">{fmtMoney(item.qty * item.unitCost)}</td>
                     <td className="p-1.5 text-center">
-                      <button onClick={() => onRemove(item.id)} className="icon-btn" aria-label="Remove item">
+                      <button onClick={() => onRemove(item.id)} className="icon-btn" aria-label={t("Remove item")}>
                         <X size={13} />
                       </button>
                     </td>
@@ -208,7 +213,7 @@ export function ItemsTable({
           </tbody>
           <tfoot>
             <tr className="border-t-[1.5px] border-ink">
-              <td colSpan={5} className="p-2.5 label-mono font-semibold">Subtotal</td>
+              <td colSpan={5} className="p-2.5 label-mono font-semibold">{t("Subtotal")}</td>
               <td className="p-2.5 font-mono font-bold text-right">{fmtMoney(subtotal)}</td>
               <td />
             </tr>
@@ -216,7 +221,7 @@ export function ItemsTable({
         </table>
       </div>
       <button onClick={onAdd} className="btn btn-blue mt-3 inline-flex items-center gap-1.5">
-        <Plus size={14} /> {addLabel}
+        <Plus size={14} /> {t(addLabel)}
       </button>
     </>
   );
