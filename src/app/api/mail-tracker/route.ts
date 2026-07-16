@@ -18,6 +18,9 @@ type MailTrackerState = {
   serial: string;
   returnAddr: string;
   envelopeSize: string;
+  printReturnFont: number;
+  printRecipientFont: number;
+  printBarcodeWidth: number;
   log: Shipment[];
 };
 
@@ -33,6 +36,11 @@ function text(value: unknown, maxLength: number): string {
   return typeof value === "string" ? value.slice(0, maxLength) : "";
 }
 
+function numberInRange(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
 function cleanState(value: unknown): MailTrackerState {
   const input = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const rawLog = Array.isArray(input.log) ? input.log.slice(0, 5000) : [];
@@ -46,6 +54,9 @@ function cleanState(value: unknown): MailTrackerState {
     envelopeSize: ["10", "9", "6-3-4", "monarch", "a7"].includes(text(input.envelopeSize, 20))
       ? text(input.envelopeSize, 20)
       : "10",
+    printReturnFont: numberInRange(input.printReturnFont, 13, 8, 20),
+    printRecipientFont: numberInRange(input.printRecipientFont, 15, 10, 24),
+    printBarcodeWidth: numberInRange(input.printBarcodeWidth, 3.55, 2.9, 4.2),
     log: rawLog.map((row) => {
       const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
       return {

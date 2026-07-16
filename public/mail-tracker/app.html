@@ -42,17 +42,17 @@
   /* ---------- envelope (print) ---------- */
   #printArea{display:none}
   @media print{
-    body *{visibility:hidden}
-    body{background:#fff}
-    #printArea,#printArea *{visibility:visible}
-    #printArea{display:block;position:absolute;left:0;top:0}
+    html,body{margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
+    body>header,body>main{display:none!important}
+    #printArea{display:block!important;position:fixed;left:0;top:0;margin:0;padding:0}
+    .envelope{break-inside:avoid;break-after:avoid;page-break-inside:avoid;page-break-after:avoid}
     @page{size:9.5in 4.125in;margin:0}
   }
   .envelope{width:9.5in;height:4.125in;position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-  .env-return{position:absolute;top:0.28in;left:0.35in;font-size:12pt;line-height:1.35;white-space:pre-line}
-  .env-dest{position:absolute;top:44%;left:37%;font-size:15pt;font-weight:600;line-height:1.32}
+  .env-return{position:absolute;top:0.28in;left:0.35in;font-size:var(--return-font-size,13pt);line-height:1.35;white-space:pre-line}
+  .env-dest{position:absolute;top:44%;left:37%;font-size:var(--recipient-font-size,15pt);font-weight:600;line-height:1.32}
   .env-dest .imb-wrap{margin-bottom:0.16in}
-  .env-dest .imb-wrap svg{display:block;width:3.55in;height:auto}
+  .env-dest .imb-wrap svg{display:block;width:var(--barcode-width,3.55in);height:auto}
   .env-dest .addr{white-space:pre-line}
 </style>
 </head>
@@ -92,7 +92,23 @@
         <option value="monarch">Monarch &mdash; 7.5 &times; 3.875 in</option>
         <option value="a7">A7 &mdash; 7.25 &times; 5.25 in</option>
       </select>
-      <div class="actions"><button class="secondary small" id="saveSettings">Save settings</button></div>
+      <label>Print sizing</label>
+      <div class="row">
+        <div>
+          <label for="printReturnFont">Return text: <span id="printReturnFontValue">13 pt</span></label>
+          <input id="printReturnFont" type="range" min="8" max="20" step="1" value="13">
+        </div>
+        <div>
+          <label for="printRecipientFont">Recipient text: <span id="printRecipientFontValue">15 pt</span></label>
+          <input id="printRecipientFont" type="range" min="10" max="24" step="1" value="15">
+        </div>
+      </div>
+      <label for="printBarcodeWidth">Barcode width: <span id="printBarcodeWidthValue">3.55 in</span></label>
+      <input id="printBarcodeWidth" type="range" min="2.9" max="4.2" step="0.05" value="3.55">
+      <div class="actions">
+        <button class="secondary small" id="saveSettings">Save settings</button>
+        <button class="secondary small" id="resetPrintSettings" type="button">Reset print sizes</button>
+      </div>
     </div>
 
     <div class="card">
@@ -294,7 +310,7 @@ const ENVELOPE_SIZES={
   "monarch":{label:"Monarch",width:7.5,height:3.875},
   "a7":{label:"A7",width:7.25,height:5.25}
 };
-let state={mid:"",bcid:"00",stid:"310",serial:"1",returnAddr:"",envelopeSize:"10",log:[]};
+let state={mid:"",bcid:"00",stid:"310",serial:"1",returnAddr:"",envelopeSize:"10",printReturnFont:13,printRecipientFont:15,printBarcodeWidth:3.55,log:[]};
 
 async function persistState(){
   const response=await fetch(API_URL,{
@@ -333,6 +349,10 @@ async function restore(){
   if(state.serial)$("serial").value=state.serial;
   if(state.returnAddr)$("returnAddr").value=state.returnAddr;
   $("envelopeSize").value=ENVELOPE_SIZES[state.envelopeSize]?state.envelopeSize:"10";
+  $("printReturnFont").value=state.printReturnFont||13;
+  $("printRecipientFont").value=state.printRecipientFont||15;
+  $("printBarcodeWidth").value=state.printBarcodeWidth||3.55;
+  applyPrintSettings();
   updatePrintHint();
   renderLog();
 }
@@ -344,7 +364,31 @@ async function saveSettings(){
   state.serial=$("serial").value.trim();
   state.returnAddr=$("returnAddr").value;
   state.envelopeSize=$("envelopeSize").value;
+  state.printReturnFont=Number($("printReturnFont").value);
+  state.printRecipientFont=Number($("printRecipientFont").value);
+  state.printBarcodeWidth=Number($("printBarcodeWidth").value);
   await persistState();
+}
+
+function applyPrintSettings(){
+  const returnFont=Number($("printReturnFont").value)||13;
+  const recipientFont=Number($("printRecipientFont").value)||15;
+  const barcodeWidth=Number($("printBarcodeWidth").value)||3.55;
+  const envelope=document.querySelector(".envelope");
+  envelope.style.setProperty("--return-font-size",returnFont+"pt");
+  envelope.style.setProperty("--recipient-font-size",recipientFont+"pt");
+  envelope.style.setProperty("--barcode-width",barcodeWidth+"in");
+  $("printReturnFontValue").textContent=returnFont+" pt";
+  $("printRecipientFontValue").textContent=recipientFont+" pt";
+  $("printBarcodeWidthValue").textContent=barcodeWidth.toFixed(2)+" in";
+}
+
+async function resetPrintSettings(){
+  $("printReturnFont").value=13;
+  $("printRecipientFont").value=15;
+  $("printBarcodeWidth").value=3.55;
+  applyPrintSettings();
+  try{await saveSettings();}catch(e){$("error").textContent=e.message;}
 }
 
 function parseAddressBlock(){
@@ -486,6 +530,11 @@ $("saveSettings").onclick=async()=>{try{$("error").textContent="";await saveSett
 $("addressBlock").addEventListener("paste",()=>setTimeout(parseAddressBlock,0));
 $("parseAddress").onclick=parseAddressBlock;
 $("envelopeSize").onchange=updatePrintHint;
+["printReturnFont","printRecipientFont","printBarcodeWidth"].forEach(id=>{
+  $(id).addEventListener("input",applyPrintSettings);
+  $(id).addEventListener("change",async()=>{try{await saveSettings();}catch(e){$("error").textContent=e.message;}});
+});
+$("resetPrintSettings").onclick=resetPrintSettings;
 $("generate").onclick=generate;
 $("printEnv").onclick=printEnvelope;
 $("logBtn").onclick=logCurrent;
