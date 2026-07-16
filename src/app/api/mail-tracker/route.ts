@@ -17,6 +17,7 @@ type MailTrackerState = {
   stid: string;
   serial: string;
   returnAddr: string;
+  envelopeSize: string;
   log: Shipment[];
 };
 
@@ -42,6 +43,9 @@ function cleanState(value: unknown): MailTrackerState {
     stid: text(input.stid, 3).replace(/\D/g, "") || "310",
     serial: text(input.serial, 9).replace(/\D/g, "") || "1",
     returnAddr: text(input.returnAddr, 1000),
+    envelopeSize: ["10", "9", "6-3-4", "monarch", "a7"].includes(text(input.envelopeSize, 20))
+      ? text(input.envelopeSize, 20)
+      : "10",
     log: rawLog.map((row) => {
       const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
       return {

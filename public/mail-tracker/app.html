@@ -48,10 +48,11 @@
     #printArea{display:block;position:absolute;left:0;top:0}
     @page{size:9.5in 4.125in;margin:0}
   }
-  .envelope{width:9.5in;height:4.125in;position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}
-  .env-return{position:absolute;top:0.3in;left:0.4in;font-size:10pt;line-height:1.35;white-space:pre-line}
-  .env-dest{position:absolute;top:1.9in;left:3.7in;font-size:12pt;line-height:1.35}
-  .env-dest .imb-wrap{margin-bottom:0.125in}
+  .envelope{width:9.5in;height:4.125in;position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+  .env-return{position:absolute;top:0.28in;left:0.35in;font-size:12pt;line-height:1.35;white-space:pre-line}
+  .env-dest{position:absolute;top:44%;left:37%;font-size:15pt;font-weight:600;line-height:1.32}
+  .env-dest .imb-wrap{margin-bottom:0.16in}
+  .env-dest .imb-wrap svg{display:block;width:3.55in;height:auto}
   .env-dest .addr{white-space:pre-line}
 </style>
 </head>
@@ -83,11 +84,23 @@
       <div class="hint">Use the STID you registered with the IV-MTR Help Desk. Serial auto-increments per envelope. 6-digit MID &rarr; 9-digit serial; 9-digit MID &rarr; 6-digit serial.</div>
       <label>Return address (printed on envelope)</label>
       <textarea id="returnAddr" rows="3" placeholder="Duy Le&#10;123 Main St&#10;City, ST 12345"></textarea>
+      <label>Envelope size</label>
+      <select id="envelopeSize">
+        <option value="10">#10 &mdash; 9.5 &times; 4.125 in</option>
+        <option value="9">#9 &mdash; 8.875 &times; 3.875 in</option>
+        <option value="6-3-4">#6&frac34; &mdash; 6.5 &times; 3.625 in</option>
+        <option value="monarch">Monarch &mdash; 7.5 &times; 3.875 in</option>
+        <option value="a7">A7 &mdash; 7.25 &times; 5.25 in</option>
+      </select>
       <div class="actions"><button class="secondary small" id="saveSettings">Save settings</button></div>
     </div>
 
     <div class="card">
       <h2>New shipment</h2>
+      <label>Paste address block</label>
+      <textarea id="addressBlock" rows="4" placeholder="Luke Xie&#10;750 N RUSH ST APT 1004&#10;CHICAGO, IL 60611-2562&#10;US"></textarea>
+      <div class="hint">Paste a U.S. address block here and the recipient fields below will fill automatically.</div>
+      <div class="actions"><button class="secondary small" id="parseAddress">Fill address fields</button></div>
       <label>Recipient name</label>
       <input id="rName" placeholder="Jane Buyer">
       <label>Street address</label>
@@ -123,10 +136,10 @@
           <div class="daft mono" id="outDaft"></div>
         </div>
         <div class="actions">
-          <button id="printEnv">Print #10 envelope</button>
+          <button id="printEnv">Print envelope</button>
           <button class="secondary" id="logBtn">Save to log</button>
         </div>
-        <div class="hint">Print tip: choose paper size &ldquo;Envelope #10&rdquo; (9.5 &times; 4.125 in), scale 100%, margins none. Feed envelope per your printer&rsquo;s icon.</div>
+        <div class="hint" id="printHint">Print tip: choose the matching envelope paper size, scale 100%, and margins none. Feed the envelope per your printer&rsquo;s icon.</div>
       </div>
     </div>
 
@@ -274,7 +287,14 @@ function imbSvg(daft,dpi){
 const $=id=>document.getElementById(id);
 const API_URL="/api/mail-tracker";
 const LEGACY_STORAGE_KEY="setchaser_imb";
-let state={mid:"",bcid:"00",stid:"310",serial:"1",returnAddr:"",log:[]};
+const ENVELOPE_SIZES={
+  "10":{label:"#10",width:9.5,height:4.125},
+  "9":{label:"#9",width:8.875,height:3.875},
+  "6-3-4":{label:"#6\u00be",width:6.5,height:3.625},
+  "monarch":{label:"Monarch",width:7.5,height:3.875},
+  "a7":{label:"A7",width:7.25,height:5.25}
+};
+let state={mid:"",bcid:"00",stid:"310",serial:"1",returnAddr:"",envelopeSize:"10",log:[]};
 
 async function persistState(){
   const response=await fetch(API_URL,{
@@ -312,6 +332,8 @@ async function restore(){
   if(state.stid)$("stid").value=state.stid;
   if(state.serial)$("serial").value=state.serial;
   if(state.returnAddr)$("returnAddr").value=state.returnAddr;
+  $("envelopeSize").value=ENVELOPE_SIZES[state.envelopeSize]?state.envelopeSize:"10";
+  updatePrintHint();
   renderLog();
 }
 
@@ -321,7 +343,39 @@ async function saveSettings(){
   state.stid=$("stid").value.trim();
   state.serial=$("serial").value.trim();
   state.returnAddr=$("returnAddr").value;
+  state.envelopeSize=$("envelopeSize").value;
   await persistState();
+}
+
+function parseAddressBlock(){
+  const lines=$("addressBlock").value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(lines.length&&/^(US|USA|UNITED STATES(?: OF AMERICA)?)$/i.test(lines[lines.length-1]))lines.pop();
+  if(lines.length<3){
+    $("error").textContent="Paste at least a name, street address, and city/state/ZIP line";
+    return false;
+  }
+
+  const name=lines.shift();
+  const cityLine=lines.pop();
+  const match=cityLine.match(/^(.+?)[,\s]+\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+  if(!match){
+    $("error").textContent="Could not read the city, state, and ZIP. Expected: CHICAGO, IL 60611-2562";
+    return false;
+  }
+
+  $("rName").value=name;
+  $("rStreet").value=lines.join(" ");
+  $("rCity").value=match[1].replace(/,$/,"").trim();
+  $("rState").value=match[2].toUpperCase();
+  $("rZip").value=match[3];
+  $("error").textContent="";
+  return true;
+}
+
+function updatePrintHint(){
+  const size=ENVELOPE_SIZES[$("envelopeSize").value]||ENVELOPE_SIZES["10"];
+  $("printEnv").textContent=`Print ${size.label} envelope`;
+  $("printHint").textContent=`Print tip: choose ${size.label} (${size.width} \u00d7 ${size.height} in), scale 100%, and margins none.`;
 }
 
 let current=null;
@@ -371,6 +425,12 @@ async function generate(){
 
 function printEnvelope(){
   if(!current)return;
+  const size=ENVELOPE_SIZES[$("envelopeSize").value]||ENVELOPE_SIZES["10"];
+  let pageStyle=$("printPageSize");
+  if(!pageStyle){pageStyle=document.createElement("style");pageStyle.id="printPageSize";document.head.appendChild(pageStyle);}
+  pageStyle.textContent=`@media print{@page{size:${size.width}in ${size.height}in;margin:0}}`;
+  document.querySelector(".envelope").style.width=size.width+"in";
+  document.querySelector(".envelope").style.height=size.height+"in";
   $("envReturn").textContent=state.returnAddr||"";
   $("envBarcode").innerHTML=imbSvg(current.daft,96);
   const line2=[current.city,current.st].filter(Boolean).join(", ")+" "+current.zipDisplay;
@@ -423,6 +483,9 @@ function exportCsv(){
 }
 
 $("saveSettings").onclick=async()=>{try{$("error").textContent="";await saveSettings();}catch(e){$("error").textContent=e.message;}};
+$("addressBlock").addEventListener("paste",()=>setTimeout(parseAddressBlock,0));
+$("parseAddress").onclick=parseAddressBlock;
+$("envelopeSize").onchange=updatePrintHint;
 $("generate").onclick=generate;
 $("printEnv").onclick=printEnvelope;
 $("logBtn").onclick=logCurrent;
