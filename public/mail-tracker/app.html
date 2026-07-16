@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SetChaser Envelope Tracker</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#181b23; --panel2:#1f2330; --text:#e8eaf0; --muted:#9aa1b2;
+    --accent:#4f8cff; --accent2:#37c978; --border:#2a2f3d; --danger:#e05b5b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);background:var(--panel)}
+  header h1{font-size:17px;margin:0;font-weight:600}
+  header .tag{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:2px 10px}
+  main{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:380px 1fr;gap:20px}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:20px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 14px}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  button{background:var(--accent);border:0;border-radius:6px;color:#fff;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.1)}
+  button.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text)}
+  button.small{padding:4px 10px;font-size:12px;font-weight:500}
+  button.danger{background:transparent;border:1px solid var(--border);color:var(--danger)}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .result-box{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:14px}
+  .daft{word-break:break-all;font-size:12px;color:var(--accent2)}
+  .err{color:var(--danger);font-size:12.5px;margin-top:8px}
+  .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  #barcodePreview{background:#fff;border-radius:6px;padding:10px;margin-top:10px;overflow-x:auto}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:12.5px}
+  .kv div:nth-child(odd){color:var(--muted)}
+  /* ---------- envelope (print) ---------- */
+  #printArea{display:none}
+  @media print{
+    body *{visibility:hidden}
+    body{background:#fff}
+    #printArea,#printArea *{visibility:visible}
+    #printArea{display:block;position:absolute;left:0;top:0}
+    @page{size:9.5in 4.125in;margin:0}
+  }
+  .envelope{width:9.5in;height:4.125in;position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}
+  .env-return{position:absolute;top:0.3in;left:0.4in;font-size:10pt;line-height:1.35;white-space:pre-line}
+  .env-dest{position:absolute;top:1.9in;left:3.7in;font-size:12pt;line-height:1.35}
+  .env-dest .imb-wrap{margin-bottom:0.125in}
+  .env-dest .addr{white-space:pre-line}
+</style>
+</head>
+<body>
+<header>
+  <h1>SetChaser Envelope Tracker</h1>
+  <span class="tag">USPS IMb &middot; Informed Visibility</span>
+</header>
+<main>
+  <div><!-- left column -->
+    <div class="card">
+      <h2>Mailer settings</h2>
+      <label>Mailer ID (6 or 9 digits)</label>
+      <input id="mid" placeholder="e.g. 902345678" maxlength="9">
+      <div class="row">
+        <div>
+          <label>Barcode ID</label>
+          <input id="bcid" value="00" maxlength="2">
+        </div>
+        <div>
+          <label>Service Type ID (STID)</label>
+          <input id="stid" value="310" maxlength="3">
+        </div>
+        <div>
+          <label>Next serial</label>
+          <input id="serial" value="1">
+        </div>
+      </div>
+      <div class="hint">Use the STID you registered with the IV-MTR Help Desk. Serial auto-increments per envelope. 6-digit MID &rarr; 9-digit serial; 9-digit MID &rarr; 6-digit serial.</div>
+      <label>Return address (printed on envelope)</label>
+      <textarea id="returnAddr" rows="3" placeholder="Duy Le&#10;123 Main St&#10;City, ST 12345"></textarea>
+      <div class="actions"><button class="secondary small" id="saveSettings">Save settings</button></div>
+    </div>
+
+    <div class="card">
+      <h2>New shipment</h2>
+      <label>Recipient name</label>
+      <input id="rName" placeholder="Jane Buyer">
+      <label>Street address</label>
+      <input id="rStreet" placeholder="456 Oak Ave Apt 2">
+      <div class="row">
+        <div style="flex:2"><label>City</label><input id="rCity"></div>
+        <div><label>State</label><input id="rState" maxlength="2"></div>
+      </div>
+      <label>ZIP (5 digits, ZIP+4, or 11-digit delivery point)</label>
+      <input id="rZip" placeholder="55369 or 55369-9129 or 55369912956">
+      <label>Order reference (optional)</label>
+      <input id="rRef" placeholder="eBay order #, card name, etc.">
+      <div class="actions">
+        <button id="generate">Generate barcode</button>
+      </div>
+      <div class="err" id="error"></div>
+    </div>
+  </div>
+
+  <div><!-- right column -->
+    <div class="card">
+      <h2>Current barcode</h2>
+      <div id="resultEmpty" class="hint">Fill in mailer settings and a recipient, then Generate.</div>
+      <div id="result" style="display:none">
+        <div class="kv">
+          <div>31-digit code</div><div class="mono" id="outDigits"></div>
+          <div>Serial used</div><div class="mono" id="outSerial"></div>
+          <div>Recipient</div><div id="outRecipient"></div>
+        </div>
+        <div id="barcodePreview"></div>
+        <div class="result-box">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">65-bar encoding (A=ascender D=descender T=tracker F=full)</div>
+          <div class="daft mono" id="outDaft"></div>
+        </div>
+        <div class="actions">
+          <button id="printEnv">Print #10 envelope</button>
+          <button class="secondary" id="logBtn">Save to log</button>
+        </div>
+        <div class="hint">Print tip: choose paper size &ldquo;Envelope #10&rdquo; (9.5 &times; 4.125 in), scale 100%, margins none. Feed envelope per your printer&rsquo;s icon.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Shipment log</h2>
+      <div class="actions" style="margin:0 0 12px">
+        <button class="secondary small" id="exportCsv">Export CSV</button>
+        <button class="danger small" id="clearLog">Clear log</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Serial</th><th>Recipient</th><th>ZIP</th><th>Ref</th><th></th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <div class="hint" id="logEmpty">Nothing logged yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>Tracking your letters</h2>
+      <div class="hint" style="font-size:12.5px">
+        Scan events appear in the <a href="https://iv.usps.com" target="_blank" style="color:var(--accent)">Informed Visibility portal</a> (or your IV-MTR data feed) keyed to your Mailer ID + serial. Match the serial in your log to the piece in IV-MTR. Remember: IMb gives passive processing scans, not delivery confirmation &mdash; use eBay Standard Envelope for eBay orders needing seller protection.
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="printArea"><div class="envelope">
+  <div class="env-return" id="envReturn"></div>
+  <div class="env-dest">
+    <div class="imb-wrap" id="envBarcode"></div>
+    <div class="addr" id="envAddr"></div>
+  </div>
+</div></div>
+
+<script>
+"use strict";
+/* ================= USPS IMb encoder (USPS-B-3200) =================
+   Validated against official USPS decoder test vector:
+   00 260 102377 000576925 / 55369912956
+   -> TDFTTTAAFAAADFTFTTATDDDFTDATFFDTADFFTTTTFAATAFTADADDAFTDFFFAFDDAT */
+
+const BAR_MAP = [
+  67,6,78,16,86,95,34,40,45,113,117,121,62,87,18,104,41,76,57,119,115,72,97,
+  2,127,26,105,35,122,52,114,7,24,82,68,63,94,44,77,112,70,100,39,30,107,
+  15,125,85,10,65,54,88,20,106,46,66,8,116,29,61,99,80,90,37,123,51,25,84,
+  129,56,4,109,96,28,36,47,11,71,33,102,21,9,17,49,124,79,64,91,42,69,53,
+  60,14,1,27,103,126,75,89,50,120,19,32,110,92,111,130,59,31,12,81,43,55,
+  5,74,22,101,128,58,118,48,108,38,98,93,23,83,13,73,3
+];
+
+function reverse13(v){let r=0;for(let i=0;i<13;i++){if(v&(1<<i))r|=1<<(12-i);}return r;}
+function popcount(v){let c=0;while(v){c+=v&1;v>>=1;}return c;}
+function initNof13(n,len){
+  const t=new Array(len);let lo=0,hi=len-1;
+  for(let count=0;count<8192;count++){
+    if(popcount(count)!==n)continue;
+    const rev=reverse13(count);
+    if(rev<count)continue;
+    if(count===rev){t[hi--]=count;}
+    else{t[lo++]=count;t[lo++]=rev;}
+  }
+  return t;
+}
+const T5=initNof13(5,1287), T2=initNof13(2,78);
+
+function crc11(bytes){
+  const gen=0x0F35;let fcs=0x07FF,data=bytes[0]<<5;
+  for(let b=2;b<8;b++){
+    fcs=((fcs^data)&0x400)?((fcs<<1)^gen):(fcs<<1);
+    fcs&=0x7FF;data<<=1;
+  }
+  for(let i=1;i<13;i++){
+    data=bytes[i]<<3;
+    for(let b=0;b<8;b++){
+      fcs=((fcs^data)&0x400)?((fcs<<1)^gen):(fcs<<1);
+      fcs&=0x7FF;data<<=1;
+    }
+  }
+  return fcs;
+}
+
+function imbEncode(tracking,routing){
+  tracking=(tracking||"").replace(/\D/g,"");
+  routing=(routing||"").replace(/\D/g,"");
+  if(tracking.length!==20)throw new Error("Tracking must be 20 digits (BI+STID+MID+serial), got "+tracking.length);
+  if(!"01234".includes(tracking[1]))throw new Error("2nd digit of Barcode ID must be 0-4");
+  if(![0,5,9,11].includes(routing.length))throw new Error("ZIP must be 0, 5, 9, or 11 digits");
+
+  // Step 1: payload
+  const adders={0:0n,5:1n,9:100001n,11:1000100001n};
+  let accum=(routing?BigInt(routing):0n)+adders[routing.length];
+  accum=accum*10n+BigInt(tracking[0]);
+  accum=accum*5n+BigInt(tracking[1]);
+  for(let i=2;i<20;i++)accum=accum*10n+BigInt(tracking[i]);
+
+  // Step 2: CRC over 13 bytes
+  const bytes=[];
+  for(let i=0;i<13;i++)bytes.push(Number((accum>>BigInt(96-8*i))&255n));
+  const fcs=crc11(bytes);
+
+  // Step 3: codewords
+  const cw=new Array(10);
+  cw[9]=Number(accum%636n);accum/=636n;
+  for(let i=8;i>=0;i--){cw[i]=Number(accum%1365n);accum/=1365n;}
+
+  // Step 4
+  cw[9]*=2;
+  if(fcs>>10)cw[0]+=659;
+
+  // Step 5: characters
+  const chars=cw.map(c=>c<1287?T5[c]:T2[c-1287]);
+  for(let i=0;i<10;i++)if(fcs&(1<<i))chars[i]=0x1FFF-chars[i];
+
+  // Step 6: bars
+  const bits=new Array(130).fill(false);
+  for(let i=0;i<10;i++)for(let j=0;j<13;j++)
+    bits[BAR_MAP[13*i+j]-1]=!!(chars[i]&(1<<j));
+  let out="";
+  for(let i=0;i<65;i++){
+    const d=bits[i],a=bits[i+65];
+    out+=d&&a?"F":a?"A":d?"D":"T";
+  }
+  return out;
+}
+
+/* ============ SVG rendering at USPS nominal dimensions ============
+   pitch 1/22", bar width 0.020", full bar 0.145", tracker 0.050"   */
+function imbSvg(daft,dpi){
+  const PITCH=1/22, BARW=0.020, FULL=0.145, TRACK=0.050;
+  const ASC_TOP=0, TRACK_TOP=(FULL-TRACK)/2, TRACK_BOT=TRACK_TOP+TRACK;
+  const w=(64*PITCH+BARW), h=FULL;
+  let rects="";
+  for(let i=0;i<65;i++){
+    const x=i*PITCH, c=daft[i];
+    let top,bot;
+    if(c==="F"){top=0;bot=FULL;}
+    else if(c==="A"){top=0;bot=TRACK_BOT;}
+    else if(c==="D"){top=TRACK_TOP;bot=FULL;}
+    else{top=TRACK_TOP;bot=TRACK_BOT;}
+    rects+=`<rect x="${(x*dpi).toFixed(2)}" y="${(top*dpi).toFixed(2)}" width="${(BARW*dpi).toFixed(2)}" height="${((bot-top)*dpi).toFixed(2)}"/>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}in" height="${h}in" viewBox="0 0 ${w*dpi} ${h*dpi}" fill="#000">${rects}</svg>`;
+}
+
+/* ======================= app logic ======================= */
+const $=id=>document.getElementById(id);
+const API_URL="/api/mail-tracker";
+const LEGACY_STORAGE_KEY="setchaser_imb";
+let state={mid:"",bcid:"00",stid:"310",serial:"1",returnAddr:"",log:[]};
+
+async function persistState(){
+  const response=await fetch(API_URL,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(state)
+  });
+  const body=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(body.error||"Could not save tracker data");
+  state=body.state;
+}
+
+async function restore(){
+  try{
+    const response=await fetch(API_URL,{cache:"no-store"});
+    const body=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(body.error||"Could not load tracker data");
+
+    if(body.state){
+      state=body.state;
+    }else{
+      // One-time import for browsers that used the previous local-only app.
+      try{
+        const legacy=JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY)||"null");
+        if(legacy&&typeof legacy==="object")state={...state,...legacy,log:Array.isArray(legacy.log)?legacy.log:[]};
+      }catch(e){}
+      await persistState();
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+  }catch(e){
+    $("error").textContent=e.message;
+  }
+  if(state.mid)$("mid").value=state.mid;
+  if(state.bcid)$("bcid").value=state.bcid;
+  if(state.stid)$("stid").value=state.stid;
+  if(state.serial)$("serial").value=state.serial;
+  if(state.returnAddr)$("returnAddr").value=state.returnAddr;
+  renderLog();
+}
+
+async function saveSettings(){
+  state.mid=$("mid").value.trim();
+  state.bcid=$("bcid").value.trim();
+  state.stid=$("stid").value.trim();
+  state.serial=$("serial").value.trim();
+  state.returnAddr=$("returnAddr").value;
+  await persistState();
+}
+
+let current=null;
+
+async function generate(){
+  $("error").textContent="";
+  try{
+    await saveSettings();
+    const mid=state.mid.replace(/\D/g,"");
+    if(mid.length!==6&&mid.length!==9)throw new Error("Mailer ID must be 6 or 9 digits");
+    const bcid=state.bcid.replace(/\D/g,"").padStart(2,"0");
+    const stid=state.stid.replace(/\D/g,"").padStart(3,"0");
+    if(stid.length!==3)throw new Error("STID must be 3 digits");
+    const serialLen=mid.length===6?9:6;
+    const serialNum=parseInt(state.serial,10);
+    if(isNaN(serialNum)||serialNum<0)throw new Error("Serial must be a number");
+    const serial=String(serialNum).padStart(serialLen,"0");
+    if(serial.length>serialLen)throw new Error("Serial exceeds "+serialLen+" digits for this MID length");
+
+    const zipRaw=$("rZip").value.replace(/\D/g,"");
+    if(![0,5,9,11].includes(zipRaw.length))throw new Error("ZIP must be 5, 9, or 11 digits");
+    const name=$("rName").value.trim();
+    if(!name)throw new Error("Recipient name required");
+
+    const tracking=bcid+stid+mid+serial;
+    const daft=imbEncode(tracking,zipRaw);
+
+    current={
+      digits:tracking+zipRaw, tracking, zip:zipRaw, daft,
+      serial:serialNum, serialStr:serial,
+      name, street:$("rStreet").value.trim(),
+      city:$("rCity").value.trim(), st:$("rState").value.trim().toUpperCase(),
+      zipDisplay:$("rZip").value.trim(), ref:$("rRef").value.trim(),
+      date:new Date().toISOString().slice(0,10)
+    };
+    $("outDigits").textContent=current.digits;
+    $("outSerial").textContent=serial;
+    $("outRecipient").textContent=name+" — "+current.zipDisplay;
+    $("outDaft").textContent=daft;
+    $("barcodePreview").innerHTML=imbSvg(daft,96);
+    $("result").style.display="block";
+    $("resultEmpty").style.display="none";
+  }catch(e){
+    $("error").textContent=e.message;
+  }
+}
+
+function printEnvelope(){
+  if(!current)return;
+  $("envReturn").textContent=state.returnAddr||"";
+  $("envBarcode").innerHTML=imbSvg(current.daft,96);
+  const line2=[current.city,current.st].filter(Boolean).join(", ")+" "+current.zipDisplay;
+  $("envAddr").textContent=[current.name,current.street,line2.trim()].filter(Boolean).join("\n");
+  window.print();
+}
+
+async function logCurrent(){
+  if(!current)return;
+  try{
+    state.log.unshift({
+      date:current.date, serial:current.serialStr, name:current.name,
+      zip:current.zipDisplay, ref:current.ref, digits:current.digits, daft:current.daft
+    });
+    // advance serial
+    state.serial=String(current.serial+1);
+    $("serial").value=state.serial;
+    await persistState();
+    renderLog();
+  }catch(e){
+    $("error").textContent=e.message;
+    await restore();
+  }
+}
+
+function renderLog(){
+  const tb=$("logBody");tb.innerHTML="";
+  $("logEmpty").style.display=state.log.length?"none":"block";
+  state.log.forEach((e,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${e.date}</td><td class="mono">${e.serial}</td><td>${esc(e.name)}</td>
+      <td>${esc(e.zip)}</td><td>${esc(e.ref||"")}</td>
+      <td><button class="danger small" data-i="${i}">x</button></td>`;
+    tr.querySelector("button").onclick=async()=>{
+      state.log.splice(i,1);
+      try{await persistState();renderLog();}catch(e){$("error").textContent=e.message;await restore();}
+    };
+    tb.appendChild(tr);
+  });
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+function exportCsv(){
+  const rows=[["date","serial","recipient","zip","reference","imb_digits","imb_bars"]];
+  state.log.forEach(e=>rows.push([e.date,e.serial,e.name,e.zip,e.ref||"",e.digits,e.daft]));
+  const csv=rows.map(r=>r.map(f=>'"'+String(f).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="setchaser-shipments.csv";a.click();
+}
+
+$("saveSettings").onclick=async()=>{try{$("error").textContent="";await saveSettings();}catch(e){$("error").textContent=e.message;}};
+$("generate").onclick=generate;
+$("printEnv").onclick=printEnvelope;
+$("logBtn").onclick=logCurrent;
+$("exportCsv").onclick=exportCsv;
+$("clearLog").onclick=async()=>{if(confirm("Clear entire log?")){state.log=[];try{await persistState();renderLog();}catch(e){$("error").textContent=e.message;await restore();}}};
+void restore();
+
+// self-test on load (official USPS vector)
+(function(){
+  const exp="TDFTTTAAFAAADFTFTTATDDDFTDATFFDTADFFTTTTFAATAFTADADDAFTDFFFAFDDAT";
+  const got=imbEncode("00260102377000576925","55369912956");
+  if(got!==exp)document.body.insertAdjacentHTML("afterbegin",
+    '<div style="background:#e05b5b;color:#fff;padding:8px 16px">Encoder self-test FAILED — do not use.</div>');
+})();
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { TopNav } from "@/components/TopNav";
 
 const PUBLIC_ROUTES = ["/login", "/signup", "/recover"];
+const BARE_ROUTES = ["/mail-tracker"];
 
 /** Auth gate + global chrome. Public auth routes render bare; everything else
  *  requires a signed-in user (redirecting to /login otherwise). */
@@ -16,12 +17,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+  const isBare = BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+  const bypassAuth = isPublic || isBare;
 
   useEffect(() => {
-    if (!loading && !user && !isPublic) router.replace("/login");
-  }, [loading, user, isPublic, router]);
+    if (!loading && !user && !bypassAuth) router.replace("/login");
+  }, [loading, user, bypassAuth, router]);
 
-  if (isPublic) return <>{children}</>;
+  if (bypassAuth) return <>{children}</>;
 
   if (loading || !user) {
     return (
