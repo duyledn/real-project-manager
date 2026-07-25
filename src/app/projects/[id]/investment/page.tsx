@@ -15,10 +15,12 @@ import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { copyRowsAsTSV } from "@/lib/clipboard";
 import { ResizableTh } from "@/components/ResizableTh";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import type { Project, ExpenseFrequency } from "@/lib/types";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
 
 const FREQUENCIES = Object.keys(FREQUENCY_LABELS) as ExpenseFrequency[];
+const SELECT_COL_WIDTH = 80;
 
 /** Investment Estimate — the buy-rehab-hold model: acquisition, financing,
  *  hold assumptions, income, expenses, and exit. Drives Analysis, Math &
@@ -260,25 +262,21 @@ function ExpandAllSheet({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
-      style={{ background: "rgba(20,12,8,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+      className="glass-backdrop fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("All inputs & assumptions")}
         onClick={(e) => e.stopPropagation()}
-        className="w-[940px] max-w-full flex flex-col"
+        className="glass-dialog w-[940px] max-w-full flex flex-col"
         style={{
           maxHeight: "88vh",
           borderRadius: 24,
-          background: "var(--glass-strong)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid var(--border)",
-          borderTopColor: "var(--border-top)",
-          boxShadow: "var(--shadow-lg)",
           animation: "popIn .3s cubic-bezier(.32,.72,0,1) both",
         }}
       >
-        <div className="flex items-center justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center justify-between gap-3 px-6 py-5">
           <div>
             <div className="text-[11px] font-bold tracking-[0.06em] uppercase text-accent">{t("Full detail")}</div>
             <div className="text-xl font-extrabold tracking-tight mt-0.5">{t("All inputs & assumptions")}</div>
@@ -340,7 +338,7 @@ function ExpandAllSheet({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-2.5">
             <span className="text-[12.5px] text-ink-muted font-semibold">{t("Projected net profit")}</span>
             <span className="font-mono text-xl font-extrabold" style={{ color: netProfit >= 0 ? "var(--pos)" : "var(--neg)" }}>
@@ -394,7 +392,7 @@ function RecurringTable({
 
   // Resizable columns (shared across the income & expense tables).
   const { widths, startResize } = useColumnWidths("recurring", { label: 220, amount: 144, freq: 176, annual: 128 });
-  const tableWidth = 40 + widths.label + widths.amount + widths.freq + widths.annual + 40;
+  const tableWidth = SELECT_COL_WIDTH + widths.label + widths.amount + widths.freq + widths.annual + 40;
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
@@ -472,10 +470,14 @@ function RecurringTable({
           {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? t("Copied!") : t("Copy for Sheets")}
         </button>
       </div>
-      <div className="panel overflow-x-auto">
+      <ExpandableTable
+        label={labelHeader}
+        className="panel overflow-hidden"
+        viewportClassName="overflow-x-auto"
+      >
         <table ref={tableRef} className="border-collapse" style={{ tableLayout: "fixed", width: tableWidth }}>
           <colgroup>
-            <col style={{ width: 40 }} />
+            <col style={{ width: SELECT_COL_WIDTH }} />
             <col style={{ width: widths.label }} />
             <col style={{ width: widths.amount }} />
             <col style={{ width: widths.freq }} />
@@ -484,12 +486,13 @@ function RecurringTable({
           </colgroup>
           <thead>
             <tr className="border-b-[1.5px] border-ink">
-              <th className="p-2.5">
+              <th className="py-2.5 pl-[20px] pr-2 text-left">
                 <input
                   type="checkbox"
                   aria-label={t("Select all rows")}
                   checked={rows.length > 0 && selected.size === rows.length}
                   onChange={toggleAll}
+                  className="!ml-0"
                 />
               </th>
               <ResizableTh label={labelHeader} col="label" startResize={startResize} />
@@ -523,14 +526,14 @@ function RecurringTable({
                   ? { background: "var(--surface-solid)", opacity: 0.35, outline: "2px solid var(--accent)", outlineOffset: "-2px", position: "relative", zIndex: 1 }
                   : undefined}
               >
-                <td className="p-2">
-                  <div className="flex items-center justify-center gap-2">
+                <td className="py-2 pl-[20px] pr-2">
+                  <div className="flex items-center justify-start gap-2">
                     <input
                       type="checkbox"
                       aria-label={t("Select row")}
                       checked={selected.has(row.id)}
                       onChange={() => toggleRow(row.id)}
-                      className={`transition-opacity ${selected.has(row.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
+                      className={`!ml-0 transition-opacity ${selected.has(row.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
                     />
                     <DragHandle handleProps={drag.handleProps(idx)} />
                   </div>
@@ -587,7 +590,7 @@ function RecurringTable({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </ExpandableTable>
       <button
         onClick={() => {
           onAdd();

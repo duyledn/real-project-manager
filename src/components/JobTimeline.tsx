@@ -7,7 +7,6 @@ import {
   Home,
   Layers,
   LayoutGrid,
-  Maximize2,
   Plus,
   Search,
   Wrench,
@@ -122,7 +121,6 @@ type JobTimelineProps = {
   jobs: Job[];
   selectedJobId: string | null;
   onSelect: (id: string) => void;
-  onExpand?: () => void;
   onHoverAdd?: (category: string) => void;
   onColorChange?: (jobId: string, color: string) => void;
   searchValue?: string;
@@ -133,7 +131,6 @@ export function JobTimeline({
   jobs,
   selectedJobId,
   onSelect,
-  onExpand,
   onHoverAdd,
   onColorChange,
   searchValue = "",
@@ -173,17 +170,6 @@ export function JobTimeline({
           aria-label={t("Search phases")}
           className="w-full bg-transparent outline-none text-[13px] font-semibold text-ink placeholder:text-ink-muted"
         />
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {onExpand && (
-          <button
-            type="button"
-            className="btn h-9 gap-1.5 px-3 inline-flex items-center"
-            onClick={onExpand}
-          >
-            <Maximize2 size={14} /> {t("Expand")}
-          </button>
-        )}
       </div>
     </div>
   );
@@ -359,18 +345,12 @@ export function JobTimeline({
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPickerJobId(null)} aria-hidden />
                 <div
-                  className="absolute z-50 p-2.5"
+                  className="glass-dialog absolute z-50 p-2.5"
                   style={{
                     left: 44,
                     top: pickerIndex * ROW_H + 42,
                     width: 184,
                     borderRadius: 16,
-                    background: "var(--glass-strong)",
-                    backdropFilter: "var(--blur)",
-                    WebkitBackdropFilter: "var(--blur)",
-                    border: "1px solid var(--border)",
-                    borderTopColor: "var(--border-top)",
-                    boxShadow: "var(--shadow-lg)",
                   }}
                 >
                   <div className="label-mono mb-2">{t("Bar Color")}</div>

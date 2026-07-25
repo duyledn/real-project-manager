@@ -23,6 +23,7 @@ import { downloadCsv } from "@/lib/clipboard";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { SectionHeader } from "@/components/fields";
 import { useI18n } from "@/lib/i18n";
+import { ExpandableTable } from "@/components/ExpandableTable";
 
 export default function AnalysisPage() {
   const { project, loading, error } = useProjectContext();
@@ -149,7 +150,11 @@ export default function AnalysisPage() {
             <Download size={14} /> {t("Export CSV")}
           </button>
         </div>
-        <div className="panel overflow-x-auto">
+        <ExpandableTable
+          label={t("Operating Pro Forma")}
+          className="panel overflow-hidden"
+          viewportClassName="overflow-x-auto"
+        >
           <table className="w-full border-collapse min-w-[720px] text-sm">
             <thead>
               <tr className="border-b-[1.5px] border-ink">
@@ -165,7 +170,7 @@ export default function AnalysisPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ExpandableTable>
         <p className="text-[11px] text-ink-muted mt-2 leading-relaxed">
           {t("Tax on a negative pre-tax income is shown as a benefit (shield). Whether rental losses are currently deductible depends on passive-activity rules and your income — treat the after-tax line as an estimate and confirm with your CPA.")}
         </p>

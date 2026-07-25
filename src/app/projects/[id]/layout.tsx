@@ -104,19 +104,13 @@ function ProjectSwitcher({ currentId }: { currentId: string }) {
       {open && rect && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
-          className="p-2 z-[120]"
+          className="glass-dialog p-2 z-[120]"
           style={{
             position: "fixed",
             top: rect.bottom + 8,
             left: rect.left,
             width: 252,
             borderRadius: 16,
-            background: "var(--glass-strong)",
-            backdropFilter: "var(--blur)",
-            WebkitBackdropFilter: "var(--blur)",
-            border: "1px solid var(--border)",
-            borderTopColor: "var(--border-top)",
-            boxShadow: "var(--shadow-lg)",
           }}
         >
           <div className="label-mono px-2 py-1.5">{t("Switch project")}</div>

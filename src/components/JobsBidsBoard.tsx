@@ -21,6 +21,7 @@ import { useI18n } from "@/lib/i18n";
 import { useColumnWidths } from "@/lib/useColumnWidths";
 import { MoneyInput } from "@/components/fields";
 import { ResizableTh } from "@/components/ResizableTh";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import {
   bidStatusColor,
   hexAlpha,
@@ -461,7 +462,7 @@ function SpreadsheetView({
   const tableWidth = 40 + widths.cat + widths.sub + widths.price + widths.status + 96 + 116;
 
   return (
-    <div className="panel overflow-hidden">
+    <ExpandableTable label={t("Bids")} className="panel overflow-hidden">
       <div className="overflow-x-auto">
         <table className="border-collapse text-sm" style={{ tableLayout: "fixed", width: tableWidth }}>
           <colgroup>
@@ -611,6 +612,6 @@ function SpreadsheetView({
       >
         <Plus size={16} /> {t("Add bid row")}
       </button>
-    </div>
+    </ExpandableTable>
   );
 }

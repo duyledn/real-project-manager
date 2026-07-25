@@ -17,6 +17,7 @@ import { useColumnWidths } from "@/lib/useColumnWidths";
 import { ResizableTh } from "@/components/ResizableTh";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobsBidsBoard } from "@/components/JobsBidsBoard";
+import { ExpandableTable } from "@/components/ExpandableTable";
 
 export default function ManagePage() {
   const { project, setProject, loading, error } = useProjectContext();
@@ -163,7 +164,11 @@ export default function ManagePage() {
           </div>
         )}
 
-        <div className="panel overflow-x-auto">
+        <ExpandableTable
+          label={t("Jobs")}
+          className="panel overflow-hidden"
+          viewportClassName="overflow-x-auto"
+        >
           <table className="border-collapse" style={{ tableLayout: "fixed", width: jobsTableWidth }}>
             <colgroup>
               <col style={{ width: 28 }} />
@@ -285,7 +290,7 @@ export default function ManagePage() {
               )}
             </tbody>
           </table>
-        </div>
+        </ExpandableTable>
         <button onClick={addJob} className="btn btn-blue mt-3 inline-flex items-center gap-1.5">
           <Plus size={14} /> {t("Add job")}
         </button>

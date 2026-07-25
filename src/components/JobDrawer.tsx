@@ -73,11 +73,16 @@ export function JobDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-ink/30 z-40" onClick={onClose} aria-hidden />
+      <div className="glass-backdrop fixed inset-0 z-40" onClick={onClose} aria-hidden />
 
       {/* Side panel */}
-      <aside className="fixed top-0 right-0 h-full w-full max-w-2xl bg-paper border-l-[1.5px] border-ink z-50 overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-paper border-b-[1.5px] border-ink px-5 py-4 flex items-center justify-between z-10">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Configure Job")}
+        className="glass-dialog fixed top-0 right-0 h-full w-full max-w-2xl z-50 overflow-y-auto"
+      >
+        <div className="sticky top-0 px-5 py-4 flex items-center justify-between z-10 bg-[var(--glass-strong)] backdrop-blur-xl">
           <div>
             <div className="label-mono">{t("Configure Job")}</div>
             <h2 className="font-display font-extrabold text-2xl leading-none mt-1">{job.category}</h2>

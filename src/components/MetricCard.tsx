@@ -8,10 +8,9 @@ type MetricCardProps = {
   value: string;
   label: string;
   note: string;
-  bars: number[];
 };
 
-export function MetricCard({ color, icon: Icon, value, label, note, bars }: MetricCardProps) {
+export function MetricCard({ color, icon: Icon, value, label, note }: MetricCardProps) {
   return (
     <div
       style={{
@@ -38,23 +37,6 @@ export function MetricCard({ color, icon: Icon, value, label, note, bars }: Metr
       </div>
       <div className="mt-[10px] truncate font-mono text-[23px] font-extrabold tracking-tight">{value}</div>
       <div className="mt-0.5 text-[12.5px] font-medium text-ink-muted">{label}</div>
-      <div className="mt-[10px] flex h-[30px] items-end gap-[3px]">
-        {bars.slice(0, 7).map((v, i) => {
-          const clamped = Math.max(0, Math.min(1, v));
-          return (
-            <div
-              key={`${label}-${i}`}
-              style={{
-                width: 5,
-                height: 5 + Math.round(clamped * 24),
-                background: color,
-                borderRadius: "2px 2px 0 0",
-                opacity: 0.38 + clamped * 0.62,
-              }}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }

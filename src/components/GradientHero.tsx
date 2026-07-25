@@ -25,6 +25,10 @@ function profitText(analysis: ProjectAnalysis | null, fmtMoney: (n: number | nul
 
 export function GradientHero({ project, analysis, awardedPct, fmtMoney }: GradientHeroProps) {
   const { t } = useI18n();
+  const profitIsNegative = (analysis?.returns.totalProfit ?? 0) < 0;
+  const displayedProfit = profitText(analysis, fmtMoney);
+  const lastGroupSeparator = Math.max(displayedProfit.lastIndexOf("."), displayedProfit.lastIndexOf(","));
+
   return (
     <section
       className="relative overflow-hidden"
@@ -32,8 +36,12 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
         borderRadius: 22,
         padding: "22px 24px",
         color: "#fff",
-        background: "linear-gradient(120deg,#13674A 0%,#1F8A5B 42%,#4FAE6B 74%,#9ECF52 100%)",
-        boxShadow: "0 18px 44px rgba(31,138,91,0.30)",
+        background: profitIsNegative
+          ? "linear-gradient(120deg,#7A1F2A 0%,#A72D39 42%,#D24A50 74%,#EF7467 100%)"
+          : "linear-gradient(120deg,#13674A 0%,#1F8A5B 42%,#4FAE6B 74%,#9ECF52 100%)",
+        boxShadow: profitIsNegative
+          ? "0 18px 44px rgba(167,45,57,0.30)"
+          : "0 18px 44px rgba(31,138,91,0.30)",
       }}
     >
       <div
@@ -42,11 +50,15 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
       />
       <div
         className="pointer-events-none absolute -bottom-28 -left-20 h-[300px] w-[300px]"
-        style={{ background: "radial-gradient(circle, rgba(214,237,142,0.32), transparent 70%)" }}
+        style={{
+          background: profitIsNegative
+            ? "radial-gradient(circle, rgba(255,185,173,0.30), transparent 70%)"
+            : "radial-gradient(circle, rgba(214,237,142,0.32), transparent 70%)",
+        }}
       />
 
       <div className="relative z-[1] grid gap-6 lg:grid-cols-[1.25fr_1fr] lg:items-center">
-        <div className="min-w-0 pr-8">
+        <div className="min-w-0 lg:pr-8">
           <div
             style={{
               fontSize: 11,
@@ -59,7 +71,7 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
             {t("PROJECTED 3-YR NET PROFIT")}
           </div>
           <div
-            className="mt-2 truncate font-mono"
+            className="mt-2 max-w-full font-mono"
             style={{
               fontSize: 46,
               fontWeight: 800,
@@ -68,7 +80,15 @@ export function GradientHero({ project, analysis, awardedPct, fmtMoney }: Gradie
               textShadow: "0 2px 18px rgba(0,0,0,0.18)",
             }}
           >
-            {profitText(analysis, fmtMoney)}
+            {displayedProfit.length > 12 && lastGroupSeparator > 0 ? (
+              <>
+                {displayedProfit.slice(0, lastGroupSeparator + 1)}
+                <wbr />
+                {displayedProfit.slice(lastGroupSeparator + 1)}
+              </>
+            ) : (
+              displayedProfit
+            )}
           </div>
           <div className="mt-3 flex items-center gap-2 text-[13px]" style={{ color: "rgba(255,255,255,0.78)" }}>
             <TrendingUp size={14} style={{ color: "rgba(255,255,255,0.8)" }} />

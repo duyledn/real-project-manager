@@ -10,12 +10,13 @@ import { useColumnWidths } from "@/lib/useColumnWidths";
 import { capitalizeFirst, focusCellDirectlyBelow, focusColumnInLastRow } from "@/lib/tableNav";
 import { DragHandle, MoneyInput, NumberInput, currencySymbol } from "@/components/fields";
 import { ColorPicker, tint } from "@/components/ColorPicker";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import { ResizableTh } from "@/components/ResizableTh";
 
 // Resizable column widths are shared by `key` so the grouped-view sub-tables
 // all line up. Fixed columns (the select/remove gutters) aren't resizable.
 const COL_DEFAULTS = { item: 260, cat: 160, qty: 96, cost: 132, total: 132 };
-const SEL_W = 64;
+const SEL_W = 112;
 const RM_W = 44;
 
 /**
@@ -93,7 +94,11 @@ export function ItemsTable({
 
   return (
     <>
-      <div className="panel overflow-x-auto">
+      <ExpandableTable
+        label={t("Itemized Remodel Costs")}
+        className="panel overflow-hidden"
+        viewportClassName="overflow-x-auto"
+      >
         <table ref={tableRef} className="border-collapse" style={{ tableLayout: "fixed", width: tableWidth }}>
           <colgroup>
             <col style={{ width: SEL_W }} />
@@ -106,12 +111,13 @@ export function ItemsTable({
           </colgroup>
           <thead>
             <tr className="border-b-[1.5px] border-ink">
-              <th className="p-2.5">
+              <th className="py-2.5 pl-[20px] pr-2 text-left">
                 <input
                   type="checkbox"
                   aria-label={t("Select all")}
                   checked={allSelected}
                   onChange={() => onToggleSelectAll(items.map((i) => i.id))}
+                  className="!ml-0"
                 />
               </th>
               <ResizableTh label={t("Item")} col="item" startResize={startResize} />
@@ -145,14 +151,14 @@ export function ItemsTable({
                           : undefined
                     }
                   >
-                    <td className="p-2">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="py-2 pl-[20px] pr-2">
+                      <div className="flex items-center justify-start gap-2">
                         <input
                           type="checkbox"
                           aria-label={t("Select item")}
                           checked={isSel}
                           onChange={() => onToggleSelect(item.id)}
-                          className={`transition-opacity ${isSel ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
+                          className={`!ml-0 transition-opacity ${isSel ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
                         />
                         <ColorPicker value={item.color} onChange={(c) => onUpdate(item.id, { color: c })} title={t("Item color")} />
                         <DragHandle handleProps={drag.handleProps(idx)} />
@@ -219,7 +225,7 @@ export function ItemsTable({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </ExpandableTable>
       <button onClick={onAdd} className="btn btn-blue mt-3 inline-flex items-center gap-1.5">
         <Plus size={14} /> {t(addLabel)}
       </button>

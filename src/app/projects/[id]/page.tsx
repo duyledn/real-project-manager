@@ -14,12 +14,13 @@ import {
 
 import { GradientHero } from "@/components/GradientHero";
 import { MetricCard } from "@/components/MetricCard";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import { analyzeProject } from "@/lib/calculations";
 import { useCurrency } from "@/lib/currency";
 import { useI18n } from "@/lib/i18n";
 import { pillStyle, BID_STATUS_SHORT, subCompliance, initialsOf } from "@/lib/bidStatus";
 import { approvedBidder } from "@/lib/jobs";
-import { AWARDED_STATUSES, PAL, kMoney } from "@/lib/palette";
+import { AWARDED_STATUSES, PAL } from "@/lib/palette";
 import { bidStatusColor } from "@/lib/bidStatus";
 import { useProjectContext } from "@/lib/projectContext";
 import { useSubcontractors } from "@/lib/useSubcontractors";
@@ -62,7 +63,6 @@ export default function DashboardPage() {
       value: fmtMoney(estBudget),
       label: t("Total budget"),
       note: t("{n} jobs", { n: project.jobs.length }),
-      bars: [0.4, 0.45, 0.52, 0.58, 0.65, 0.7, 0.75],
     },
     {
       color: PAL[1],
@@ -70,7 +70,6 @@ export default function DashboardPage() {
       value: String(bidsInPlay),
       label: t("Bids in play"),
       note: t("+{n} wk", { n: 3 }),
-      bars: [0.2, 0.45, 0.6, 0.8, 0.55, 0.9, 0.7],
     },
     {
       color: PAL[2],
@@ -78,7 +77,6 @@ export default function DashboardPage() {
       value: `${awardedJobs}/${project.jobs.length}`,
       label: t("Awarded"),
       note: t("{a} jobs", { a: awardedJobs }),
-      bars: [0.1, 0.2, 0.35, 0.45, 0.55, 0.65, 0.8],
     },
     {
       color: PAL[3],
@@ -86,7 +84,6 @@ export default function DashboardPage() {
       value: `${datedJobs}/${project.jobs.length || 0}`,
       label: t("On schedule"),
       note: t("on track"),
-      bars: [0.5, 0.55, 0.65, 0.6, 0.75, 0.72, 0.88],
     },
   ];
 
@@ -105,7 +102,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <BudgetByCategory jobs={project.jobs} estBudget={estBudget} />
+      <BudgetByCategory jobs={project.jobs} estBudget={estBudget} fmtMoney={fmtMoney} />
 
       <div className="grid lg:grid-cols-[1.5fr_1fr] gap-3.5">
         <div className="panel-2 p-[18px]">
@@ -215,7 +212,15 @@ export default function DashboardPage() {
   );
 }
 
-function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number }) {
+function BudgetByCategory({
+  jobs,
+  estBudget,
+  fmtMoney,
+}: {
+  jobs: Job[];
+  estBudget: number;
+  fmtMoney: (n: number | null | undefined) => string;
+}) {
   const { t } = useI18n();
 
   return (
@@ -226,11 +231,11 @@ function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number 
           <div className="text-[11px] text-ink-muted">{t("Awarded vs budget - bid spread per trade")}</div>
         </div>
         <span className="pill shrink-0" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>
-          {t("{amount} total", { amount: kMoney(estBudget) })}
+          {t("{amount} total", { amount: fmtMoney(estBudget) })}
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <ExpandableTable label={t("Budget by category")} viewportClassName="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr className="border-b" style={{ borderColor: "var(--border)" }}>
@@ -249,16 +254,24 @@ function BudgetByCategory({ jobs, estBudget }: { jobs: Job[]; estBudget: number 
                 </td>
               </tr>
             ) : (
-              jobs.map((job, i) => <BudgetRow key={job.id} job={job} index={i} />)
+              jobs.map((job, i) => <BudgetRow key={job.id} job={job} index={i} fmtMoney={fmtMoney} />)
             )}
           </tbody>
         </table>
-      </div>
+      </ExpandableTable>
     </div>
   );
 }
 
-function BudgetRow({ job, index }: { job: Job; index: number }) {
+function BudgetRow({
+  job,
+  index,
+  fmtMoney,
+}: {
+  job: Job;
+  index: number;
+  fmtMoney: (n: number | null | undefined) => string;
+}) {
   const { t } = useI18n();
   const color = PAL[index % PAL.length];
   const nonZeroBids = job.bidders.filter((b) => b.bidPrice > 0);
@@ -284,9 +297,9 @@ function BudgetRow({ job, index }: { job: Job; index: number }) {
       </td>
       <td className="py-3 text-center font-mono text-[11.5px] text-ink-muted">{job.bidders.length}</td>
       <td className="py-3 text-right font-mono text-[11.5px] text-ink-muted">
-        {nonZeroBids.length ? `${kMoney(lowBid)}-${kMoney(highBid)}` : "-"}
+        {nonZeroBids.length ? `${fmtMoney(lowBid)}-${fmtMoney(highBid)}` : "-"}
       </td>
-      <td className="py-3 text-right font-mono text-[12.5px] font-semibold">{kMoney(job.estimatedCost)}</td>
+      <td className="py-3 text-right font-mono text-[12.5px] font-semibold">{fmtMoney(job.estimatedCost)}</td>
       <td className="py-3 pl-4 text-right">
         <div className="flex items-center justify-end gap-2">
           <div className="h-1.5 w-[110px] rounded-full" style={{ background: "var(--glass)", border: "1px solid var(--border)" }}>

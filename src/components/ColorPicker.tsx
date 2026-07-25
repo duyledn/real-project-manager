@@ -75,18 +75,12 @@ export function ColorPicker({
           <>
             <div className="fixed inset-0 z-[140]" onClick={() => setPos(null)} aria-hidden />
             <div
-              className="fixed z-[150] p-2.5"
+              className="glass-dialog fixed z-[150] p-2.5"
               style={{
                 top: pos.top,
                 left: pos.left,
                 width: POPOVER_W,
                 borderRadius: 16,
-                background: "var(--glass-strong)",
-                backdropFilter: "var(--blur)",
-                WebkitBackdropFilter: "var(--blur)",
-                border: "1px solid var(--border)",
-                borderTopColor: "var(--border-top)",
-                boxShadow: "var(--shadow-lg)",
               }}
             >
               <div className="label-mono mb-2">{t(title)}</div>

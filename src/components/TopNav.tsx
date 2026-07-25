@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Settings, FolderOpen, Shield, LogOut } from "lucide-react";
+import { ChevronDown, Settings, FolderOpen, Shield, LogOut, PackageOpen } from "lucide-react";
 import type { ProjectSummary } from "@/lib/types";
 import { Logo } from "@/components/Logo";
 import { useSession } from "@/lib/session-context";
@@ -12,12 +12,6 @@ import { prefetchProject } from "@/lib/useProject";
 
 const menuPanel: React.CSSProperties = {
   borderRadius: 16,
-  background: "var(--glass-strong)",
-  backdropFilter: "var(--blur)",
-  WebkitBackdropFilter: "var(--blur)",
-  border: "1px solid var(--border)",
-  borderTopColor: "var(--border-top)",
-  boxShadow: "var(--shadow-lg)",
 };
 
 /** Global top navigation bar: brand (→ landing) on the left; Projects menu,
@@ -38,6 +32,10 @@ export function TopNav() {
         </Link>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <Link href="/inventory" className="btn gap-1.5" title={t("Inventory")}>
+            <PackageOpen size={15} className="text-accent" />
+            <span className="hidden sm:inline">{t("Inventory")}</span>
+          </Link>
           <ProjectsMenu />
           <Link href="/settings" title={t("Workspace & profile settings")} aria-label={t("Workspace settings")} className="icon-btn">
             <Settings size={16} />
@@ -80,7 +78,7 @@ function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[220px] p-2 z-[120]" style={menuPanel}>
+        <div className="glass-dialog absolute right-0 mt-2 w-[220px] p-2 z-[120]" style={menuPanel}>
           <div className="px-2.5 py-2 mb-1">
             <div className="text-[13px] font-extrabold">@{user.tag}</div>
             <div className="text-[11px] text-ink-muted">
@@ -153,7 +151,7 @@ function ProjectsMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[260px] p-2 z-[120]" style={menuPanel}>
+        <div className="glass-dialog absolute right-0 mt-2 w-[260px] p-2 z-[120]" style={menuPanel}>
           <div className="label-mono px-2 py-1.5">{t("Your projects")}</div>
           <div className="max-h-[320px] overflow-auto flex flex-col gap-0.5">
             {!loaded ? (

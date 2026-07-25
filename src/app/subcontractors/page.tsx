@@ -18,6 +18,7 @@ import { makeSubcontractorInput } from "@/lib/defaults";
 import { subCompliance, initialsOf } from "@/lib/bidStatus";
 import { useI18n } from "@/lib/i18n";
 import { ResizableTh } from "@/components/ResizableTh";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import type { SubcontractorWithJobs, SubcontractorInput } from "@/lib/types";
 
 export default function SubcontractorsPage() {
@@ -102,7 +103,7 @@ export default function SubcontractorsPage() {
           {t("No subcontractors yet. Add your first to start building bids.")}
         </div>
       ) : (
-        <div className="panel overflow-hidden">
+        <ExpandableTable label={t("Subcontractor Database")} className="panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="border-collapse text-sm" style={{ tableLayout: "fixed", width: subsTableWidth }}>
               <colgroup>
@@ -144,7 +145,7 @@ export default function SubcontractorsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </ExpandableTable>
       )}
     </main>
   );

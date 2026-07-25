@@ -19,6 +19,7 @@ import { fmtPercent, fmtNumber } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { useI18n } from "@/lib/i18n";
 import { SectionHeader } from "@/components/fields";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import type { Project } from "@/lib/types";
 
 export default function MathPage() {
@@ -230,7 +231,11 @@ function AmortizationDetail({ project, analysis, fmtMoney }: { project: Project;
               {t(showAll ? "Show year-ends only" : "Show every month")}
             </button>
           </div>
-          <div className="panel overflow-x-auto max-h-96 overflow-y-auto">
+          <ExpandableTable
+            label={t("Amortization Schedule")}
+            className="panel overflow-hidden"
+            viewportClassName="overflow-auto max-h-96"
+          >
             <table className="w-full border-collapse min-w-[480px] text-sm">
               <thead className="sticky top-0 bg-panel">
                 <tr className="border-b-[1.5px] border-ink">
@@ -253,7 +258,7 @@ function AmortizationDetail({ project, analysis, fmtMoney }: { project: Project;
                 ))}
               </tbody>
             </table>
-          </div>
+          </ExpandableTable>
         </div>
       )}
     </section>

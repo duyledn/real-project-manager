@@ -20,6 +20,7 @@ import { useTheme } from "@/lib/theme";
 import { fmtPercent, fmtMultiple, fmtNumber } from "@/lib/format";
 import { FREQUENCY_LABELS, FREQUENCY_FACTORS } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
+import { ExpandableTable } from "@/components/ExpandableTable";
 
 export default function ReportPage() {
   const { project, loading, error } = useProjectContext();
@@ -151,7 +152,7 @@ export default function ReportPage() {
         {/* Renovation scope */}
         <section className="print-avoid-break">
           <ReportHeading num="03" title={t("Renovation Scope & Budget")} />
-          <div className="panel overflow-hidden">
+          <ExpandableTable label={t("Renovation Scope & Budget")} className="panel overflow-hidden">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
@@ -180,7 +181,7 @@ export default function ReportPage() {
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </ExpandableTable>
         </section>
 
         {/* Income & expenses with frequency */}
@@ -236,7 +237,11 @@ export default function ReportPage() {
         {/* Pro forma */}
         <section className="print-avoid-break">
           <ReportHeading num="07" title={t("Operating Pro Forma")} />
-          <div className="panel overflow-x-auto">
+          <ExpandableTable
+            label={t("Operating Pro Forma")}
+            className="panel overflow-hidden"
+            viewportClassName="overflow-x-auto"
+          >
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-[1.5px] border-ink">
@@ -261,7 +266,7 @@ export default function ReportPage() {
                 <PFRow label={t("Levered Cash Flow")} values={proForma.map((y) => y.cashFlow)} highlight fmtMoney={fmtMoney} />
               </tbody>
             </table>
-          </div>
+          </ExpandableTable>
         </section>
 
         {/* Exit */}
@@ -345,7 +350,7 @@ function FreqTable({
   const { t } = useI18n();
   const annualTotal = rows.reduce((s, r) => s + r.amount * FREQUENCY_FACTORS[r.frequency], 0);
   return (
-    <div className="panel overflow-hidden">
+    <ExpandableTable label={title} className="panel overflow-hidden">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b-[1.5px] border-ink">
@@ -378,6 +383,6 @@ function FreqTable({
           </tr>
         </tfoot>
       </table>
-    </div>
+    </ExpandableTable>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { useProjectContext } from "@/lib/projectContext";
 import { makeId } from "@/lib/defaults";
 import { useI18n } from "@/lib/i18n";
+import { ExpandableTable } from "@/components/ExpandableTable";
 import type { Project, ProjectFile } from "@/lib/types";
 
 /** Per-file size cap. Files persist as data URLs inside the project JSON, so
@@ -221,13 +222,7 @@ export default function FilesPage() {
 
   return (
     <div className="space-y-6" onClick={() => setMenuId(null)}>
-      {/* Intro + save */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display font-extrabold text-2xl leading-none">{t("Files")}</h1>
-          <p className="text-sm text-ink-muted mt-1.5 max-w-2xl">{t("Drag items onto a folder to move them.")}</p>
-        </div>
-      </div>
+      <p className="max-w-2xl text-sm text-ink-muted">{t("Drag items onto a folder to move them.")}</p>
 
       {/* Toolbar: breadcrumb + actions */}
       <div className="panel p-3 flex items-center justify-between gap-3 flex-wrap">
@@ -266,15 +261,16 @@ export default function FilesPage() {
       </div>
 
       {/* Contents */}
-      {children.length === 0 ? (
-        <div className="panel p-12 text-center">
+      <ExpandableTable label={t("Files")} className="panel overflow-hidden">
+        {children.length === 0 ? (
+        <div className="p-12 text-center">
           <Folder size={40} className="mx-auto text-faint mb-3" />
           <p className="text-sm text-ink-muted">
             {t("This folder is empty. Use")} <span className="font-bold">{t("Upload")}</span> {t("to add files or")} <span className="font-bold">{t("New folder")}</span> {t("to organize them.")}
           </p>
         </div>
       ) : (
-        <div className="panel overflow-hidden">
+        <>
           {/* Folders */}
           {folders.map((f) => {
             const Icon = Folder;
@@ -371,8 +367,9 @@ export default function FilesPage() {
               </div>
             );
           })}
-        </div>
+        </>
       )}
+      </ExpandableTable>
 
       {/* Footer summary */}
       <div className="text-[11px] text-ink-muted font-mono">
@@ -439,16 +436,10 @@ function ItemMenu({
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 w-[150px] p-1.5 z-[80]"
+          className="glass-dialog absolute right-0 top-full mt-1 w-[150px] p-1.5 z-[80]"
           onClick={(e) => e.stopPropagation()}
           style={{
             borderRadius: 14,
-            background: "var(--glass-strong)",
-            backdropFilter: "var(--blur)",
-            WebkitBackdropFilter: "var(--blur)",
-            border: "1px solid var(--border)",
-            borderTopColor: "var(--border-top)",
-            boxShadow: "var(--shadow-lg)",
           }}
         >
           {onDownload && (

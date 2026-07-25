@@ -356,8 +356,8 @@ function ProjectRow({
               <>
                 <div className="fixed inset-0 z-[130]" onClick={() => setAssignOpen(false)} />
                 <div
-                  className="absolute right-0 mt-2 w-[230px] p-2 z-[140]"
-                  style={{ borderRadius: 16, background: "var(--glass-strong)", backdropFilter: "var(--blur)", WebkitBackdropFilter: "var(--blur)", border: "1px solid var(--border)", borderTopColor: "var(--border-top)", boxShadow: "var(--shadow-lg)" }}
+                  className="glass-dialog absolute right-0 mt-2 w-[230px] p-2 z-[140]"
+                  style={{ borderRadius: 16 }}
                 >
                   <div className="label-mono px-2 py-1.5">{t("Assign teammates")}</div>
                   {company.members.length === 0 ? (

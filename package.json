@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test:calcs": "tsx scripts/verify-calcs.ts",
     "test:api": "tsx scripts/test-api.ts",
+    "test:inventory": "tsx scripts/test-inventory.ts",
+    "seed:inventory": "tsx scripts/seed-inventory.ts",
     "migrate:postgres": "tsx scripts/migrate-to-postgres.ts"
   },
   "dependencies": {
