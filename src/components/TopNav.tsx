@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Settings, FolderOpen, Shield, LogOut, PackageOpen } from "lucide-react";
+import { ChevronDown, Settings, FolderOpen, Shield, LogOut } from "lucide-react";
 import type { ProjectSummary } from "@/lib/types";
 import { Logo } from "@/components/Logo";
 import { useSession } from "@/lib/session-context";
@@ -32,10 +32,6 @@ export function TopNav() {
         </Link>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
-          <Link href="/inventory" className="btn gap-1.5" title={t("Inventory")}>
-            <PackageOpen size={15} className="text-accent" />
-            <span className="hidden sm:inline">{t("Inventory")}</span>
-          </Link>
           <ProjectsMenu />
           <Link href="/settings" title={t("Workspace & profile settings")} aria-label={t("Workspace settings")} className="icon-btn">
             <Settings size={16} />
